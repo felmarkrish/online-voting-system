@@ -1,8 +1,13 @@
 let timer;
 let listenersAdded = false;
 
+/**
+ * Start a session inactivity timer.
+ * @param {Function} logoutCallback - Function to call when session expires.
+ * @param {number} timeoutMinutes - Timeout duration in minutes (default: 5).
+ */
 export function startSessionTimeout(logoutCallback, timeoutMinutes = 5) {
-  if (typeof window === "undefined") return; // ✅ avoid SSR issues
+  if (typeof window === "undefined") return; // Avoid SSR issues
 
   const resetTimer = () => {
     clearTimeout(timer);
@@ -11,16 +16,28 @@ export function startSessionTimeout(logoutCallback, timeoutMinutes = 5) {
     timer = setTimeout(() => {
       console.debug("[Session] Inactivity timeout reached. Logging out...");
       logoutCallback();
-    }, timeoutMinutes * 60 * 1000); // ⏱ 1 min by default
+    }, timeoutMinutes * 60 * 1000);
   };
 
   if (!listenersAdded) {
-    ["click", "mousemove", "keydown", "scroll", "touchstart"].forEach((evt) =>
-      window.addEventListener(evt, resetTimer)
-    );
+    const events = ["click", "mousemove", "keydown", "scroll", "touchstart"];
+    events.forEach((evt) => window.addEventListener(evt, resetTimer));
     listenersAdded = true;
     console.debug("[Session] Activity listeners added.");
   }
 
-  resetTimer(); // ✅ start first timer
+  resetTimer();
+}
+
+/**
+ * Optional: Call this to remove listeners manually (useful on component unmount)
+ */
+export function stopSessionTimeout() {
+  if (typeof window === "undefined") return;
+
+  clearTimeout(timer);
+  const events = ["click", "mousemove", "keydown", "scroll", "touchstart"];
+  events.forEach((evt) => window.removeEventListener(evt, resetTimer));
+  listenersAdded = false;
+  console.debug("[Session] Activity listeners removed.");
 }

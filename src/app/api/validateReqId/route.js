@@ -1,12 +1,7 @@
+// app/api/auth/validate/route.js
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
-
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASS || "",
-  database: process.env.DB_NAME || "online-voting-system",
-});
+import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 export async function GET(req) {
   try {
@@ -17,12 +12,10 @@ export async function GET(req) {
       return NextResponse.json({ valid: false });
     }
 
-    const [rows] = await pool.query(
-      "SELECT COUNT(*) as total FROM users WHERE reqId = ?",
-      [reqId]
-    );
+    const userRef = doc(db, "users", reqId);
+    const userSnap = await getDoc(userRef);
 
-    if (rows[0].total > 0) {
+    if (userSnap.exists()) {
       return NextResponse.json({ valid: true });
     } else {
       return NextResponse.json({ valid: false });

@@ -5,9 +5,9 @@ export function middleware(req) {
   const loggedIn = req.cookies.get("logged_in")?.value;
   const role = req.cookies.get("role")?.value;
   const reqIdCookie = req.cookies.get("reqId")?.value;
-  const { pathname, searchParams } = req.nextUrl;
+  const { pathname } = req.nextUrl;
 
-  // ✅ Allow login, addpopulation, and API
+  // ✅ Always allow login, population form, and API routes
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/addpopulation") ||
@@ -16,7 +16,7 @@ export function middleware(req) {
     return NextResponse.next();
   }
 
-  // ✅ Not logged in → redirect
+  // ✅ Redirect not logged in users to login
   if (!loggedIn) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
@@ -39,13 +39,12 @@ export function middleware(req) {
     "/votemonitoring",
     "/votehistory",
   ];
-
   if (voterRoutes.some((route) => pathname.startsWith(route))) {
     if (role !== "Voter") {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
-    // ✅ Check reqId for voter pages
+    // ✅ Ensure voter reqId matches the one in the URL
     const reqIdUrl = req.nextUrl.searchParams.get("reqId");
     if (!reqIdUrl || reqIdUrl !== reqIdCookie) {
       return NextResponse.redirect(new URL("/login", req.url));

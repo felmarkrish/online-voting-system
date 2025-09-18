@@ -1,67 +1,70 @@
+// app/api/votecount/route.js
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASS || "",
-  database: process.env.DB_NAME || "online-voting-system",
-});
-
-export async function GET(req) {
+export async function GET() {
   try {
     const currentYear = new Date().getFullYear();
 
-
-     // ✅ Fetch votestartup for current year only
-    const [startupRows] = await pool.query(
-      "SELECT * FROM votestartup WHERE year = ? LIMIT 1",
-      [currentYear]
+    // ✅ Fetch votestartup for current year
+    const startupSnap = await getDocs(
+      query(collection(db, "votestartup"), where("year", "==", currentYear))
     );
-    // ✅ If no row found, set safe defaults
-    let startup = startupRows[0] || {
+    const startup = startupSnap.docs[0]?.data() || {
       year: currentYear,
       start: "",
       message: "",
       alreadyvotemessage: "",
     };
 
-    const [rows] = await pool.execute(
-      `SELECT 
-  p.reqId AS popId,
-  p.firstname,
-  p.lastname,
-  v.elect_name,
-  v.electionId,
-  p.photo,
-  el.num_winners,
-  el.idx,
-  COUNT(v.popId) AS totalCount
-FROM votedetails AS v
-INNER JOIN population AS p 
-  ON v.popId = p.reqId AND v.year = ?
-INNER JOIN electorial_tbl AS el 
-  ON el.electId = v.electionId
-GROUP BY p.reqId, v.elect_name, v.electionId
-ORDER BY el.idx`,
-      [currentYear]
+    // ✅ Fetch all votedetails for current year
+    const voteSnap = await getDocs(
+      query(collection(db, "votedetails"), where("year", "==", currentYear))
     );
 
-    const voteCountcandidates = rows.map((row) => ({
-      vid: row.id,
-      startupid:startupRows.id,
-      candidateId: row.candidateId,
-      firstname: row.firstname,
-      lastname: row.lastname,
-      photo: row.photo
-        ? `data:image/jpeg;base64,${Buffer.from(row.photo).toString("base64")}`
-        : null,
-      elect_name: row.elect_name,
-      electionId: row.electionId,
-      totalCount: row.totalCount,
-      popId: row.popId,
-      numWinners: row.num_winners,
-    }));
+    const voteCountMap = {}; // key: `${popId}-${elect_name}`
+
+    for (const doc of voteSnap.docs) {
+      const vote = doc.data();
+      const key = `${vote.popId}-${vote.elect_name}`;
+      if (!voteCountMap[key]) {
+        voteCountMap[key] = { ...vote, totalCount: 0 };
+      }
+      voteCountMap[key].totalCount += 1;
+    }
+
+    // ✅ Fetch population info and election info
+    const populationSnap = await getDocs(collection(db, "population"));
+    const populationMap = {};
+    for (const doc of populationSnap.docs) {
+      const data = doc.data();
+      populationMap[data.reqId] = data;
+    }
+
+    const electionsSnap = await getDocs(collection(db, "electorial_tbl"));
+    const electionsMap = {};
+    for (const doc of electionsSnap.docs) {
+      const data = doc.data();
+      electionsMap[data.electId] = data;
+    }
+
+    // ✅ Combine data
+    const voteCountcandidates = Object.values(voteCountMap).map((v) => {
+      const pop = populationMap[v.popId] || {};
+      const el = electionsMap[v.electionId] || {};
+      return {
+        candidateId: v.popId,
+        firstname: pop.firstname || "",
+        lastname: pop.lastname || "",
+        photo: pop.photo || null,
+        elect_name: v.elect_name,
+        electionId: v.electionId,
+        totalCount: v.totalCount,
+        popId: v.popId,
+        numWinners: el.num_winners || 1,
+      };
+    });
 
     return NextResponse.json({
       success: true,
@@ -69,7 +72,7 @@ ORDER BY el.idx`,
       voteCountcandidates,
     });
   } catch (err) {
-    console.error("DB error:", err);
+    console.error("Firestore error:", err);
     return NextResponse.json(
       { error: "Database query failed", details: err.message },
       { status: 500 }

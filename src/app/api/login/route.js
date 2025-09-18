@@ -1,7 +1,6 @@
-// app/api/login/route.js
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
-import { collection, doc, getDocs, getDoc, query, where, limit } from "firebase/firestore";
+import { collection, query, where, getDocs, limit } from "firebase/firestore";
 
 export async function POST(req) {
   try {
@@ -12,14 +11,13 @@ export async function POST(req) {
     }
 
     const usersRef = collection(db, "users");
-    const snapshot = await getDocs(usersRef);
-    const userDocs = snapshot.docs;
 
-    // Check if there are any Admin users
-    const adminUsers = userDocs.filter(doc => doc.data().role === "Admin");
+    // ✅ Check if any Admin exists
+    const adminQuery = query(usersRef, where("role", "==", "Admin"), limit(1));
+    const adminSnapshot = await getDocs(adminQuery);
 
-    if (adminUsers.length === 0) {
-      // First use → allow default admin/admin
+    if (adminSnapshot.empty) {
+      // First use → default admin/admin
       if (username === "admin" && password === "admin") {
         const res = NextResponse.json({
           success: true,
@@ -27,36 +25,28 @@ export async function POST(req) {
           role: "Admin",
           userstatus: "Active",
         });
-        res.cookies.set("logged_in", "true", {
-          httpOnly: true,
-          path: "/",
-          maxAge: 60 * 60,
-        });
+        res.cookies.set("logged_in", "true", { httpOnly: true, path: "/", maxAge: 60*60 });
         return res;
       } else {
-        return NextResponse.json(
-          { error: "Invalid default login" },
-          { status: 401 }
-        );
+        return NextResponse.json({ error: "Invalid default login" }, { status: 401 });
       }
     }
 
-    // Normal login check
-    const userSnapshot = await getDocs(
-      query(usersRef, where("username", "==", username), where("userpass", "==", password), limit(1))
+    // ✅ Normal login
+    const userQuery = query(
+      usersRef,
+      where("username", "==", username),
+      where("userpass", "==", password),
+      limit(1)
     );
+    const userSnapshot = await getDocs(userQuery);
 
     if (userSnapshot.empty) {
-      return NextResponse.json(
-        { error: "Invalid username or password" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Invalid username or password" }, { status: 401 });
     }
 
-    const userDoc = userSnapshot.docs[0];
-    const user = userDoc.data();
+    const user = userSnapshot.docs[0].data();
 
-    // Success: set cookies
     const res = NextResponse.json({
       success: true,
       username: user.username,
@@ -65,21 +55,9 @@ export async function POST(req) {
       reqId: user.reqId || null,
     });
 
-    res.cookies.set("logged_in", "true", {
-      httpOnly: true,
-      path: "/",
-      maxAge: 60 * 60, // 1 hour
-    });
-    res.cookies.set("role", user.role, {
-      httpOnly: true,
-      path: "/",
-      maxAge: 60 * 60,
-    });
-    res.cookies.set("reqId", user.reqId || "", {
-      httpOnly: true,
-      path: "/",
-      maxAge: 60 * 60,
-    });
+    res.cookies.set("logged_in", "true", { httpOnly: true, path: "/", maxAge: 60*60 });
+    res.cookies.set("role", user.role, { httpOnly: true, path: "/", maxAge: 60*60 });
+    res.cookies.set("reqId", user.reqId || "", { httpOnly: true, path: "/", maxAge: 60*60 });
 
     return res;
 

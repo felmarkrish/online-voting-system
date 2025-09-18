@@ -1,58 +1,48 @@
+// app/api/population/route.js
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
+import { db } from "@/lib/firebase"; // adjust path
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  deleteDoc,
+} from "firebase/firestore";
 
+// GET - fetch all population joined with users
 export async function GET() {
   try {
-    // Connect to DB
-    const connection = await mysql.createConnection({
-      host: "localhost",
-      user: "root",
-      password: "",
-      database: "online-voting-system",
-    });
+    const populationRef = collection(db, "population");
+    const populationSnap = await getDocs(populationRef);
 
-    // Fetch population joined with users
-    const [rows] = await connection.execute(`
-      SELECT 
-        a.reqId, a.firstname, a.lastname, a.age, a.contact, a.gender, a.email, a.residence, a.requestdate, a.photo,
-        b.username, b.userpass, b.role, b.userstatus
-      FROM population AS a
-      INNER JOIN users AS b
-      ON a.reqId = b.reqId
-      ORDER BY a.id DESC
-    `);
+    const data = [];
 
-    await connection.end();
+    for (const popDoc of populationSnap.docs) {
+      const pop = popDoc.data();
+      const userDoc = await getDoc(doc(db, "users", pop.reqId));
+      const user = userDoc.exists() ? userDoc.data() : {};
 
-    // Convert BLOB photo to base64
-    const data = rows.map((row) => ({
-      ...row,
-      photo: row.photo
-        ? `data:image/jpeg;base64,${Buffer.from(row.photo).toString("base64")}`
-        : null,
-    }));
+      data.push({
+        ...pop,
+        username: user.username || null,
+        userpass: user.userpass || null,
+        role: user.role || null,
+        userstatus: user.userstatus || null,
+        photo: pop.photo || null, // assume stored as base64 string
+      });
+    }
 
     return NextResponse.json(data);
-  } catch (error) {
-    console.error("Error fetching population:", error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error("Error fetching population:", err);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
 
-// PUT - Update existing population record
+// PUT - update existing population record
 export async function PUT(req) {
-  let connection
   try {
-    // Create connection
-    connection = await mysql.createConnection({
-      host: "localhost",
-      user: "root",
-      password: "",
-      database: "online-voting-system",
-    });
     const body = await req.json();
     const {
       reqId,
@@ -70,79 +60,51 @@ export async function PUT(req) {
     } = body;
 
     if (!reqId) {
-      return NextResponse.json(
-        { success: false, error: "reqId is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "reqId is required" }, { status: 400 });
     }
 
-    // Update population table
-      // ✅ Convert base64 photo to binary buffer (BLOB)
-    let photoBuffer = null;
-    if (photo) {
-      const base64Data = photo.replace(/^data:image\/\w+;base64,/, "");
-      photoBuffer = Buffer.from(base64Data, "base64");
-    }
-    const [popResult] = await connection.execute(
-      `UPDATE population 
-       SET firstname=?, lastname=?, age=?, contact=?, gender=?, email=?, residence=?, photo=?
-       WHERE reqId=?`,
-      [firstname, lastname, age, contact, gender, email, residence, photoBuffer, reqId]
+    // Update population
+    const popRef = doc(db, "population", reqId);
+    await setDoc(
+      popRef,
+      { firstname, lastname, age, contact, gender, email, residence, photo },
+      { merge: true }
     );
 
-    // Update users table
-    const [userResult] = await connection.execute(
-      `UPDATE users
-       SET username=?, userpass=?, role=?, userstatus="Active"
-       WHERE reqId=?`,
-      [username, userpass, role, reqId]
+    // Update user
+    const userRef = doc(db, "users", reqId);
+    await setDoc(
+      userRef,
+      { username, userpass, role, userstatus: "Active" },
+      { merge: true }
     );
-
-    await connection.end();
 
     return NextResponse.json({
       success: true,
       message: "✅ Population record updated successfully",
     });
-  } catch (error) {
-    console.error("❌ Error updating population:", error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error("Error updating population:", err);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
 
-// Delete election
+// DELETE - remove population and user
 export async function DELETE(req) {
-  const { searchParams } = new URL(req.url);
-  const reqId = searchParams.get("reqId");
-
-  if (!reqId) {
-    return NextResponse.json({ error: "Missing population ID" }, { status: 400 });
-  }
-
-  let connection;
   try {
-    connection = await mysql.createConnection({
-      host: "localhost",
-      user: "root",
-      password: "",
-      database: "online-voting-system",
-    });
+    const { searchParams } = new URL(req.url);
+    const reqId = searchParams.get("reqId");
 
-    // Delete from users first (if it references population)
-    await connection.execute("DELETE FROM users WHERE reqId = ?", [reqId]);
+    if (!reqId) {
+      return NextResponse.json({ error: "Missing population ID" }, { status: 400 });
+    }
 
-    // Then delete from population
-    await connection.execute("DELETE FROM population WHERE reqId = ?", [reqId]);
+    await deleteDoc(doc(db, "users", reqId));
+    await deleteDoc(doc(db, "population", reqId));
 
-    await connection.end();
     return NextResponse.json({ message: "Record deleted successfully" });
   } catch (err) {
-    console.error("API DELETE error:", err.message);
-    if (connection) await connection.end();
+    console.error("Error deleting population:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
-

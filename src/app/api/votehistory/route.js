@@ -1,11 +1,12 @@
+// app/api/votehistory/route.js
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 export async function GET(req) {
-  let connection;
   try {
     const { searchParams } = new URL(req.url);
-    const year = parseInt(searchParams.get("year"), 10); // ensure integer
+    const year = parseInt(searchParams.get("year"), 10);
     const voterId = searchParams.get("voterId");
 
     if (isNaN(year) || !voterId) {
@@ -15,31 +16,34 @@ export async function GET(req) {
       );
     }
 
-    // Connect to DB
-    connection = await mysql.createConnection({
-      host: "localhost",
-      user: "root",
-      password: "",
-      database: "online-voting-system",
-    });
-
-    // Query with photo blob
-    const [rows] = await connection.execute(
-      `SELECT v.elect_name, v.monthdate, p.firstname, p.lastname, p.photo
-       FROM votedetails v
-       INNER JOIN population p ON v.popId = p.reqId
-       WHERE v.voterId = ? AND v.year = ?
-       ORDER BY v.monthdate DESC`,
-      [voterId, year]
+    // ✅ Query votedetails collection
+    const voteQuery = query(
+      collection(db, "votedetails"),
+      where("voterId", "==", voterId),
+      where("year", "==", year)
     );
+    const voteSnap = await getDocs(voteQuery);
 
-    // Convert blob → base64
-    const data = rows.map((row) => ({
-      ...row,
-      photo: row.photo
-        ? `data:image/jpeg;base64,${row.photo.toString("base64")}`
-        : null,
-    }));
+    const data = [];
+
+    for (const voteDoc of voteSnap.docs) {
+      const vote = voteDoc.data();
+
+      // Fetch voter details
+      const popRef = collection(db, "population");
+      const popQuery = query(popRef, where("reqId", "==", vote.popId));
+      const popSnap = await getDocs(popQuery);
+
+      const popData = popSnap.docs[0]?.data() || {};
+
+      data.push({
+        elect_name: vote.elect_name,
+        monthdate: vote.monthdate,
+        firstname: popData.firstname || "",
+        lastname: popData.lastname || "",
+        photo: popData.photo || null, // base64 stored directly in Firestore
+      });
+    }
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
@@ -48,7 +52,5 @@ export async function GET(req) {
       { success: false, error: error.message },
       { status: 500 }
     );
-  } finally {
-    if (connection) await connection.end();
   }
 }
