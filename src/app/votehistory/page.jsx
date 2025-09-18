@@ -1,21 +1,22 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import banner from "@/images/banner.jpg";
 import { useSearchParams } from "next/navigation";
 
-export default function VoterHistoryPage() {
+// ✅ Inner component that uses useSearchParams
+function VoterHistoryPageInner() {
   const searchParams = useSearchParams();
-  const reqId = searchParams.get("reqId");
+  const reqId = searchParams.get("reqId"); // get reqId from URL
   const withReqId = (path) => `${path}?reqId=${reqId}`;
 
   const [username, setUsername] = useState("");
   const [votes, setVotes] = useState([]);
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [year, setYear] = useState(new Date().getFullYear()); // default = current year
   const [loading, setLoading] = useState(false);
   const [isValid, setIsValid] = useState(false);
-  const [checkedReqId, setCheckedReqId] = useState(false);
+  const [checkedReqId, setCheckedReqId] = useState(false); // ✅ track if validation finished
 
   // validate reqId
   useEffect(() => {
@@ -25,6 +26,7 @@ export default function VoterHistoryPage() {
         setCheckedReqId(true);
         return;
       }
+
       try {
         const res = await fetch(`/api/validateReqId?reqId=${reqId}`);
         const data = await res.json();
@@ -36,37 +38,48 @@ export default function VoterHistoryPage() {
         setCheckedReqId(true);
       }
     }
+
     validateReqId();
   }, [reqId]);
 
-  // load username
+  // Get username from localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem("username");
     if (storedUser) setUsername(storedUser);
   }, []);
 
-  // fetch votes
+  // Fetch votes
   useEffect(() => {
     async function fetchVotes() {
+      if (!reqId) return; // ✅ only fetch if reqId exists
       setLoading(true);
       try {
-        const res = await fetch(`/api/votehistory?year=${year}&voterId=${reqId}`);
+        const res = await fetch(
+          `/api/votehistory?year=${year}&voterId=${reqId}`
+        );
         if (!res.ok) throw new Error("API returned " + res.status);
+
         const data = await res.json();
-        setVotes(data.data || []);
+        setVotes(data.data || []); // use data.data from your API
       } catch (err) {
         console.error("Error fetching vote history:", err);
       } finally {
         setLoading(false);
       }
     }
-    if (reqId) fetchVotes();
+
+    fetchVotes();
   }, [year, reqId]);
 
   // Render checks
   if (!checkedReqId) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Loading...
+      </div>
+    );
   }
+
   if (!isValid) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -90,28 +103,23 @@ export default function VoterHistoryPage() {
         </header>
         <aside className="flex full-width w-64">
           <ul className="voterscontainermenu flex height-fit margin-0 space-y-4 full-width flex-row justify-end items-center gap-5 p-8">
-            <li className="height-fit margin-0 font-semibold cursor-pointer hover:text-blue-600">
+            <li className="font-semibold cursor-pointer hover:text-blue-600">
               <a href={withReqId("/voterdashboard")}>Dashboard</a>
             </li>
-            <li className="height-fit margin-0 cursor-pointer hover:text-blue-600">
+            <li className="cursor-pointer hover:text-blue-600">
               <a href={withReqId("/votemonitoring")}>Vote Monitoring</a>
             </li>
-            <li className="height-fit margin-0 cursor-pointer hover:text-blue-600">
+            <li className="cursor-pointer hover:text-blue-600">
               <a href={withReqId("/votepage")}>Vote now</a>
             </li>
-            <li className="height-fit margin-0 cursor-pointer hover:text-blue-600">
+            <li className="cursor-pointer hover:text-blue-600">
               <a href={withReqId("/votehistory")}>Voting history</a>
             </li>
             <li
-              className="height-fit cursor-pointer hover:text-red-600"
+              className="cursor-pointer hover:text-red-600"
               onClick={async () => {
-                // Call API to clear cookies
                 await fetch("/api/logout", { method: "POST" });
-
-                // Clear localStorage
                 localStorage.removeItem("username");
-
-                // Redirect to login
                 window.location.href = "/login";
               }}
             >
@@ -121,7 +129,7 @@ export default function VoterHistoryPage() {
         </aside>
       </div>
 
-      {/* Sidebar + Body */}
+      {/* Banner */}
       <div>
         <div className="banner-container">
           <Image src={banner} alt="Banner" className="w-full" />
@@ -144,14 +152,13 @@ export default function VoterHistoryPage() {
                 onChange={(e) => setYear(Number(e.target.value))}
                 className="border rounded px-2 py-1"
               >
-                {Array.from(
-                  { length: 5 },
-                  (_, i) => new Date().getFullYear() - i
-                ).map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
+                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(
+                  (y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  )
+                )}
               </select>
             </div>
 
@@ -161,7 +168,6 @@ export default function VoterHistoryPage() {
             ) : votes.length > 0 ? (
               <div className="w-full shadow rounded-lg">
                 <div className="votersparentContainer flex flex-col gap-20">
-                  {/* Group votes by elect_name */}
                   {Object.entries(
                     votes.reduce((acc, vote) => {
                       if (!acc[vote.elect_name]) acc[vote.elect_name] = [];
@@ -170,12 +176,9 @@ export default function VoterHistoryPage() {
                     }, {})
                   ).map(([electName, voteList]) => (
                     <div key={electName} className="mb-6">
-                      {/* Elect name as header */}
                       <h1 className="text-xl font-bold mb-2 text-center strongh1">
                         {electName}
                       </h1>
-
-                      {/* List of votes under that election name */}
                       <div className="flex items-center justify-center child-holder gap-20">
                         {voteList.map((vote, idx) => (
                           <div
@@ -197,7 +200,6 @@ export default function VoterHistoryPage() {
                               <h2 className="font-semibold strongh3">
                                 {vote.firstname} {vote.lastname}
                               </h2>
-                              {/* <span className="text-sm text-gray-600 ">{vote.monthdate}</span> */}
                             </div>
                           </div>
                         ))}
@@ -213,5 +215,20 @@ export default function VoterHistoryPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+// ✅ Export with Suspense wrapper
+export default function VoterHistoryPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          Loading...
+        </div>
+      }
+    >
+      <VoterHistoryPageInner />
+    </Suspense>
   );
 }
