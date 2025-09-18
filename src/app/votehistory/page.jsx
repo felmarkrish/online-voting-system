@@ -221,13 +221,7 @@ function VoterHistoryPageInner() {
 // ✅ Export with Suspense wrapper
 export default function VoterHistoryPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center min-h-screen">
-          Loading...
-        </div>
-      }
-    >
+     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
       <VoterHistoryPageInner />
     </Suspense>
   );
