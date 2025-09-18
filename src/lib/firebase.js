@@ -1,12 +1,10 @@
-// lib/firebase.js
+// src/lib/firebase.js
 import admin from "firebase-admin";
-import { getApps } from "firebase-admin/app";
+import serviceAccount from "../../firebase-service-account.json"; // adjust path
 
-if (!getApps().length) {
+if (!admin.apps.length) {
   admin.initializeApp({
-    credential: admin.credential.cert(
-      JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY) // load from env
-    ),
+    credential: admin.credential.cert(serviceAccount),
   });
 }
 
