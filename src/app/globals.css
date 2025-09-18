@@ -24,3 +24,421 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.bg-blur {
+  background: none;
+  border: 2px solid #dddd;
+  backdrop-filter: blur(15px);
+}
+.bg-blurry {
+  backdrop-filter: blur(15px);
+  box-shadow: 0 7px 6px rgba(255, 255, 255);
+}
+.main-bg {
+  background: #05051a;
+}
+.frm-bg {
+  background: url(./images/login-bg.jpg) no-repeat;
+  background-size: cover;
+}
+.voter-bg {
+  background: url(./images/voter-bg.jpg) no-repeat;
+  background-size: cover;
+}
+input {
+  border: none;
+  border-radius: 0;
+  outline: none;
+}
+.btmborder {
+  border-bottom: 1px solid #fff !important;
+}
+input:focus {
+  outline: none;
+}
+input::placeholder {
+  border: none;
+  outline: none;
+}
+.globalbtn {
+  border-radius: 20px;
+  color: #000;
+  background: #fff;
+  font-size: 20px;
+  font-weight: 500;
+}
+.globalbtn:hover {
+  background: #388e4a;
+  color: #fff;
+}
+
+.fontawesome-txtinput {
+  position: relative;
+  z-index: 1;
+}
+.fontawesome-txtinput > svg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: initial;
+  right: 0;
+  margin: auto;
+  z-index: -1;
+}
+.parent-container {
+  position: relative;
+  z-index: 1;
+}
+.parent-container > .child {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+}
+.bg-color-1 {
+  background: #1c555e;
+}
+.bg-color-2 {
+  background: #165416;
+}
+.bg-color-3 {
+  background: #241142;
+}
+.bg-color-green {
+  background: #0a500a;
+}
+.bg-color-green:hover {
+  background: #137413;
+}
+.bg-color-blue {
+  background: #11116c;
+}
+.bg-color-blue:hover {
+  background: #1b1bbf;
+}
+.bg-color-yellow {
+  background: #838315bf;
+}
+.bg-color-yellow:hover {
+  background: #838315;
+}
+.bg-color-red {
+  background: #b51717b5;
+}
+.bg-color-red:hover {
+  background: #b51717;
+}
+.textcontainer {
+  width: calc(25% - 1 * 15px);
+}
+.flex-wrap-wrap {
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.pad-right-100 {
+  padding-right: 100px;
+}
+.pad-right-230 {
+  padding-right: 230px;
+}
+.margin-0 {
+  margin: 0;
+}
+.no-border > select {
+  border: none;
+}
+select > option {
+  background: none !important;
+}
+select option {
+  background-color: white; /* Remove gray */
+  color: black; /* Text color */
+  font-weight: normal; /* Make sure it's consistent */
+}
+.button-pad {
+  padding: 10px 40px;
+}
+.text-right {
+  padding-right: 10px;
+  padding-top: 10px;
+}
+.big-paadding {
+  padding: 0px 330px;
+}
+.big-paadding-1 {
+  padding: 0px 250px;
+}
+input::placeholder {
+  background: transparent;
+  background-color: transparent;
+}
+.full-width {
+  width: 100%;
+}
+.listpopulation > .textcontainer {
+  width: calc(25% - 1 * 8px) !important;
+}
+.listpopulation {
+  position: relative;
+  z-index: 1;
+  padding-right: 260px;
+  gap: 10px;
+}
+.listpopulation > .captureclass {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+.lighttext {
+  font-size: 14px;
+  text-align: right;
+  color: #0d4c0d;
+  font-weight: 600;
+}
+.lighttext:hover {
+  color: #3e8f16;
+}
+.height-fit {
+  height: fit-content;
+}
+.position-fix {
+  position: fixed;
+}
+.voterscontainermenu > li {
+  color: #fff;
+}
+.voterscontainermenu > li:hover {
+  color: #38cf2e;
+}
+.banner-container {
+  position: relative;
+  z-index: 1;
+}
+.banner-container > img {
+  height: 660px;
+}
+.banner-container:before {
+  content: "";
+  position: absolute;
+  display: inline-block;
+  z-index: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.position-relative {
+  position: relative;
+}
+.color-green {
+  color: #acffac;
+}
+.h1 {
+  font-size: 40px;
+}
+.photoContainer > img {
+  width: 200px;
+  height: 200px;
+}
+.strongh1 {
+  font-size: 40px;
+}
+.strongh2 {
+  font-size: 30px;
+}
+.strongh3 {
+  font-size: 20px;
+  text-transform: capitalize;
+}
+.votersparentContainer h1 {
+  margin-bottom: 45px;
+}
+.strongheader {
+  font-size: 50px;
+  border-bottom: 1px solid #fff;
+  padding-bottom: 10px;
+  margin-bottom: 30px;
+}
+.filterdateclass {
+  margin-bottom: 50px;
+}
+.bg-w-hover:hover span {
+  color: #000;
+}
+ul > li:active,
+a:active,
+ul > li:hover,
+a:hover ul > li:visited {
+  color: green !important;
+}
+.fsize-20 {
+  font-size: 20px;
+}
+.textcapital {
+  text-transform: capitalize;
+}
+.isHide {
+  display: none;
+}
+.isShow {
+  display: flex !important;
+}
+.isShow > img,
+.lead > img {
+  border: 3px solid green;
+}
+.isShow,
+.lead {
+  position: relative;
+  top: 0;
+}
+.isShow:hover,
+.lead:hover {
+  top: -10px !important;
+}
+@media (max-width: 1800px) {
+  .voter-bg .big-paadding-1 {
+    padding: 0px 100px;
+  }
+}
+@media (max-width: 1500px) {
+  .voter-bg .big-paadding-1 {
+    padding: 0px 20px;
+  }
+}
+@media (max-width: 1280px) {
+  .listpopulation > .textcontainer {
+  width: calc(33% - 1 * 8px) !important;
+}
+}
+
+@media (max-width: 1220px) {
+  .voter-bg .big-paadding-1 {
+    padding: 0px 0px;
+  }
+}
+@media (max-width: 1099px) {
+  .voter-bg .big-paadding-1 .pad-right-100 {
+    padding: 0;
+  }
+}
+@media (max-width: 1130px) {
+ .listpopulation > .captureclass {
+  position: relative;
+  width: 100%;
+  padding-bottom: 20px;
+ }
+  .listpopulation  {
+      padding: 0;
+  }
+}
+@media (max-width: 1060px) {
+  .listpopulation  .pad-right-100 {
+  padding-right: 30px;
+}
+}
+@media (max-width: 1023px) {
+  .addelection {
+    align-items: center;
+  }
+}
+@media (max-width: 990px) {
+  .verifymember {
+    flex-direction: column;
+  }
+  .verifymember > aside {
+    width: 100%;
+    box-shadow: 0 2px 2px rgb(255, 255, 255);
+  }
+  .verifymember > aside li {
+    text-align: center;
+  }
+}
+@media (max-width: 950px) {
+  .voter-bg .big-paadding-1 .textcontainer {
+    width: calc(33.333% - 1 * 15px);
+  }
+  .addelectionrow > td:last-child {
+    flex-direction: column;
+    gap: 3px;
+  }
+  .addelectionrow > td:last-child > button {
+    margin: 0;
+  }
+}
+@media (max-width: 870px) {
+    .candidateregistration {
+      flex-direction: column;
+    }
+    .candidateregistration > aside {
+      width: 100%;
+      box-shadow: 0 2px 1px rgb(255, 255, 255);
+    }
+    .candidateregistration > aside > ul > li {
+      text-align: center;
+    }
+}
+@media (max-width: 767px) {
+  .bg-blurry {
+    box-shadow: 0 2px 1px rgb(255, 255, 255);
+  }
+}
+@media (max-width: 699px) {
+  .listpopulation .textcontainer,
+  .voter-bg .big-paadding-1 .textcontainer {
+    width: calc(50% - 1 * 15px) !important;
+  }
+}
+@media (max-width: 640px) {
+  .vote-monitoring-holder {
+    gap: 10px;
+  }
+  .vote-monitoring-holder > .flex {
+    width: 40%;
+  }
+  .addelectiontable {
+    width: 570px;
+  }
+}
+
+@media (max-width: 615px) {
+  .position-fix {
+    position: relative;
+  }
+  .position-fix .voterscontainermenu {
+    flex-direction: column;
+    width: 100%;
+  }
+  .banner-container > img {
+    height: 380px;
+  }
+  .position-fix > header {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+  .strongheader {
+    font-size: 30px;
+    padding-bottom: 10px;
+  }
+}
+@media (max-width: 499px) {
+ 
+  .voter-bg .big-paadding-1 .textcontainer {
+    width: 100% !important;
+  }
+}
+@media (max-width: 450px) {
+  .small-padding main {
+    padding: 30px 10px !important;
+  }
+    .listpopulation .textcontainer,
+  .vote-monitoring-holder > .flex {
+    width: 100% !important;
+  }
+}
