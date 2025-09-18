@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import banner from "@/images/banner.jpg";
 
-export default function VoterPage() {
+function VoterMonitoringInner() {
   const [username, setUsername] = useState("");
   const [voteCounts, setVoteCounts] = useState([]);
   const [startup, setStartup] = useState({ start: "", num_winners: 1 });
@@ -283,3 +283,14 @@ export default function VoterPage() {
     </div>
   );
 }
+
+
+// ✅ Export with Suspense wrapper
+export default function VoterMonitoringPage() {
+  return (
+     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <VoterMonitoringInner />
+    </Suspense>
+  );
+}
+

@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Swal from "sweetalert2";
 import banner from "@/images/banner.jpg"; // adjust path
 
-export default function VoterPage() {
+function VoterPageInner() {
   const [username, setUsername] = useState("");
   const [elections, setElections] = useState([]);
   const [selected, setSelected] = useState({});
@@ -245,5 +245,15 @@ export default function VoterPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+
+// ✅ Export with Suspense wrapper
+export default function VoterPage() {
+  return (
+     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <VoterPageInner />
+    </Suspense>
   );
 }
