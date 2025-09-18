@@ -1,12 +1,7 @@
+// app/api/login/route.js
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
-
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASS || "",
-  database: process.env.DB_NAME || "online-voting-system",
-});
+import { db } from "@/lib/firebase";
+import { collection, doc, getDocs, getDoc, query, where, limit } from "firebase/firestore";
 
 export async function POST(req) {
   try {
@@ -16,14 +11,15 @@ export async function POST(req) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    // ✅ Check if there are any users in the table
-    const [countRows] = await pool.query(
-      `SELECT COUNT(*) as total FROM users WHERE role = "Admin"`
-    );
-    const userCount = countRows[0].total;
+    const usersRef = collection(db, "users");
+    const snapshot = await getDocs(usersRef);
+    const userDocs = snapshot.docs;
 
-    if (userCount === 0) {
-      // ✅ First use → allow default admin/admin
+    // Check if there are any Admin users
+    const adminUsers = userDocs.filter(doc => doc.data().role === "Admin");
+
+    if (adminUsers.length === 0) {
+      // First use → allow default admin/admin
       if (username === "admin" && password === "admin") {
         const res = NextResponse.json({
           success: true,
@@ -45,46 +41,48 @@ export async function POST(req) {
       }
     }
 
-    // ✅ Normal login check
-    const [rows] = await pool.query(
-      "SELECT * FROM users WHERE username = ? AND userpass = ? LIMIT 1",
-      [username, password]
+    // Normal login check
+    const userSnapshot = await getDocs(
+      query(usersRef, where("username", "==", username), where("userpass", "==", password), limit(1))
     );
 
-    if (rows.length === 0) {
+    if (userSnapshot.empty) {
       return NextResponse.json(
         { error: "Invalid username or password" },
         { status: 401 }
       );
     }
 
-    const user = rows[0];
+    const userDoc = userSnapshot.docs[0];
+    const user = userDoc.data();
 
-    // ✅ Success
+    // Success: set cookies
     const res = NextResponse.json({
       success: true,
       username: user.username,
       role: user.role,
       userstatus: user.userstatus,
-      reqId: user.reqId,   // ✅ add this
+      reqId: user.reqId || null,
     });
-  res.cookies.set("logged_in", "true", {
-  httpOnly: true,
-  path: "/",
-  maxAge: 60 * 60, // 1 hour
-});
-res.cookies.set("role", user.role, {
-  httpOnly: true,
-  path: "/",
-  maxAge: 60 * 60,
-});
-res.cookies.set("reqId", user.reqId, {
-  httpOnly: true,
-  path: "/",
-  maxAge: 60 * 60,
-});
+
+    res.cookies.set("logged_in", "true", {
+      httpOnly: true,
+      path: "/",
+      maxAge: 60 * 60, // 1 hour
+    });
+    res.cookies.set("role", user.role, {
+      httpOnly: true,
+      path: "/",
+      maxAge: 60 * 60,
+    });
+    res.cookies.set("reqId", user.reqId || "", {
+      httpOnly: true,
+      path: "/",
+      maxAge: 60 * 60,
+    });
 
     return res;
+
   } catch (err) {
     console.error("Login error:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

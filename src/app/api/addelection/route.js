@@ -1,32 +1,36 @@
+// app/api/elections/route.js
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
+import { db } from "@/lib/firebase"; // admin SDK
+import {
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  orderBy,
+  getDoc,
+} from "firebase/firestore";
 
-const DB_CONFIG = {
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "online-voting-system",
-};
-
-// Get all elections
+// GET all elections
 export async function GET() {
   try {
-    const connection = await mysql.createConnection(DB_CONFIG);
-    const [rows] = await connection.execute(
-      "SELECT * FROM electorial_tbl ORDER BY idx"
-    );
-    await connection.end();
-    return NextResponse.json(rows);
+    const electionsRef = collection(db, "electorial_tbl");
+    const q = query(electionsRef, orderBy("idx"));
+    const snapshot = await getDocs(q);
+    const elections = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return NextResponse.json(elections);
   } catch (err) {
-    console.error("API GET error:", err);
+    console.error("GET elections error:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-// Add or silently update election
+// POST new election (or update silently if exists)
 export async function POST(req) {
   try {
-    const { election_name, num_winners, createddate, Indexes } = await req.json();
+    const { election_name, num_winners, createddate, idx } = await req.json();
     if (!election_name || !num_winners) {
       return NextResponse.json(
         { error: "Election name and number of winners are required" },
@@ -34,97 +38,79 @@ export async function POST(req) {
       );
     }
 
-    const connection = await mysql.createConnection(DB_CONFIG);
-
     // Check if election name already exists
-    const [existing] = await connection.execute(
-      "SELECT * FROM electorial_tbl WHERE election_name = ?",
-      [election_name]
-    );
+    const electionsRef = collection(db, "electorial_tbl");
+    const snapshot = await getDocs(electionsRef);
+    const existing = snapshot.docs.find(doc => doc.data().election_name === election_name);
 
-    if (existing.length > 0) {
-      // If exists, update silently instead of error
-      const existingId = existing[0].electId;
-      await connection.execute(
-        "UPDATE electorial_tbl SET num_winners = ?, idx = ?, WHERE electId = ?",
-         [num_winners, Indexes, existingId]  // make sure you pass Indexes too
-      );
-      await connection.end();
+    if (existing) {
+      // Update silently
+      await updateDoc(doc(db, "electorial_tbl", existing.id), {
+        num_winners,
+        idx,
+      });
       return NextResponse.json({
         message: "Election updated silently",
-        electId: existingId,
+        electId: existing.id,
       });
     }
 
-    // If not exists, insert new election
-    const [lastRow] = await connection.execute(
-      "SELECT electId FROM electorial_tbl ORDER BY electId DESC LIMIT 1"
-    );
-
-    let newIdNumber = 1;
-    if (lastRow.length > 0) {
-      const lastId = lastRow[0].electId; // e.g., "2025-003"
-      const lastNum = parseInt(lastId.split("-")[1], 10);
-      newIdNumber = lastNum + 1;
-    }
-
-    const newElectID = `2025-${String(newIdNumber).padStart(3, "0")}`;
-
-    await connection.execute(
-      "INSERT INTO electorial_tbl (electId, election_name, num_winners, createddate, idx) VALUES (?, ?, ?, ?, ?)",
-      [newElectID, election_name, num_winners, createddate, Indexes]
-    );
-
-    await connection.end();
+    // If not exists, create new election
+    const newElectID = `2025-${Date.now()}`; // simple unique ID
+    await setDoc(doc(db, "electorial_tbl", newElectID), {
+      electId: newElectID,
+      election_name,
+      num_winners,
+      createddate,
+      idx,
+    });
 
     return NextResponse.json({
       message: "Election added successfully",
       electId: newElectID,
     });
   } catch (err) {
-    console.error("API POST error:", err);
+    console.error("POST elections error:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-// Update election
+// PUT update election
 export async function PUT(req) {
   try {
-    const { electId, election_name, num_winners, Indexes } = await req.json();
+    const { electId, election_name, num_winners, idx } = await req.json();
     if (!electId || !election_name || !num_winners) {
       return NextResponse.json({ error: "Missing data" }, { status: 400 });
     }
 
-    const connection = await mysql.createConnection(DB_CONFIG);
+    const electionRef = doc(db, "electorial_tbl", electId);
+    const electionSnap = await getDoc(electionRef);
+    if (!electionSnap.exists()) {
+      return NextResponse.json({ error: "Election not found" }, { status: 404 });
+    }
 
-    // Prevent duplicate names for other elections
-    const [existing] = await connection.execute(
-      "SELECT * FROM electorial_tbl WHERE election_name = ? AND electID != ?",
-      [election_name, electId]
+    // Prevent duplicate names
+    const electionsRef = collection(db, "electorial_tbl");
+    const snapshot = await getDocs(electionsRef);
+    const duplicate = snapshot.docs.find(
+      doc => doc.data().election_name === election_name && doc.id !== electId
     );
-
-    if (existing.length > 0) {
-      await connection.end();
+    if (duplicate) {
       return NextResponse.json(
         { error: "Another election with the same name exists" },
         { status: 400 }
       );
     }
 
-    await connection.execute(
-      "UPDATE electorial_tbl SET election_name = ?, num_winners = ?, idx = ? WHERE electID = ?",
-      [election_name, num_winners, Indexes, electId]
-    );
-    await connection.end();
-
+    await updateDoc(electionRef, { election_name, num_winners, idx });
     return NextResponse.json({ message: "Election updated successfully" });
   } catch (err) {
-    console.error("API PUT error:", err);
+    console.error("PUT elections error:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-// Delete election
+// DELETE election
 export async function DELETE(req) {
   try {
     const { electId } = await req.json();
@@ -132,13 +118,11 @@ export async function DELETE(req) {
       return NextResponse.json({ error: "Missing election ID" }, { status: 400 });
     }
 
-    const connection = await mysql.createConnection(DB_CONFIG);
-    await connection.execute("DELETE FROM electorial_tbl WHERE electID = ?", [electId]);
-    await connection.end();
-
+    const electionRef = doc(db, "electorial_tbl", electId);
+    await deleteDoc(electionRef);
     return NextResponse.json({ message: "Election deleted successfully" });
   } catch (err) {
-    console.error("API DELETE error:", err);
+    console.error("DELETE elections error:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
