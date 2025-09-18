@@ -5,19 +5,19 @@ import Image from "next/image";
 import banner from "@/images/banner.jpg";
 import { useSearchParams } from "next/navigation";
 
-export default function DashboardPage() {
+export default function VoterHistoryPage() {
   const searchParams = useSearchParams();
-  const reqId = searchParams.get("reqId"); // get reqId from URL
+  const reqId = searchParams.get("reqId");
   const withReqId = (path) => `${path}?reqId=${reqId}`;
 
   const [username, setUsername] = useState("");
   const [votes, setVotes] = useState([]);
-  const [year, setYear] = useState(new Date().getFullYear()); // default = current year
+  const [year, setYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(false);
   const [isValid, setIsValid] = useState(false);
-  const [checkedReqId, setCheckedReqId] = useState(false); // ✅ track if validation finished
+  const [checkedReqId, setCheckedReqId] = useState(false);
 
-  // Hooks always run
+  // validate reqId
   useEffect(() => {
     async function validateReqId() {
       if (!reqId) {
@@ -25,64 +25,48 @@ export default function DashboardPage() {
         setCheckedReqId(true);
         return;
       }
-
       try {
         const res = await fetch(`/api/validateReqId?reqId=${reqId}`);
         const data = await res.json();
-
         setIsValid(data.valid);
-        setCheckedReqId(true);
       } catch (err) {
         console.error("Validation error:", err);
         setIsValid(false);
+      } finally {
         setCheckedReqId(true);
       }
     }
-
     validateReqId();
   }, [reqId]);
 
-  // Get username + reqId from localStorage
+  // load username
   useEffect(() => {
     const storedUser = localStorage.getItem("username");
     if (storedUser) setUsername(storedUser);
   }, []);
 
-  // Fetch votes for hardcoded voterId (or current reqId)
+  // fetch votes
   useEffect(() => {
     async function fetchVotes() {
       setLoading(true);
       try {
-        console.log("Fetching votes:", { year, voterId: reqId });
-
-        const res = await fetch(
-          `/api/votehistory?year=${year}&voterId=${reqId}`
-        );
+        const res = await fetch(`/api/votehistory?year=${year}&voterId=${reqId}`);
         if (!res.ok) throw new Error("API returned " + res.status);
-
         const data = await res.json();
-        console.log("Vote history data:", data);
-
-        setVotes(data.data || []); // use data.data from your API
+        setVotes(data.data || []);
       } catch (err) {
         console.error("Error fetching vote history:", err);
       } finally {
         setLoading(false);
       }
     }
+    if (reqId) fetchVotes();
+  }, [year, reqId]);
 
-    fetchVotes();
-  }, [year]); // only depend on year now
-
-  // Render loading or error
+  // Render checks
   if (!checkedReqId) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        Loading...
-      </div>
-    );
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
-
   if (!isValid) {
     return (
       <div className="flex items-center justify-center min-h-screen">
