@@ -206,19 +206,37 @@ const clearForm = () => {
         const video = document.getElementById("video");
         video.srcObject = stream;
       })
-      .catch(err => console.error("Camera error:", err));
+       .catch(err => Swal.fire({ icon: "error", title: "Camera error", text: err.message }));
   };
 
   const capturePhoto = () => {
-    const video = document.getElementById("video");
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL("image/png");
-    setPhoto(dataUrl);
-  };
+   const video = document.getElementById("video");
+ 
+   // Check if camera has started
+   if (!video.srcObject) {
+     return Swal.fire({
+       icon: "warning",
+       title: "Camera not started",
+       text: "Please click 'Start Camera' before capturing a photo."
+     });
+   }
+ 
+   if (!video.videoWidth || !video.videoHeight) {
+     return Swal.fire({
+       icon: "warning",
+       title: "Video not ready",
+       text: "Please wait for the camera to load."
+     });
+   }
+ 
+   const canvas = document.createElement("canvas");
+   canvas.width = video.videoWidth;
+   canvas.height = video.videoHeight;
+   const ctx = canvas.getContext("2d");
+   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+ 
+   setPhoto(canvas.toDataURL("image/png"));
+ };
 
 
     // Edit form

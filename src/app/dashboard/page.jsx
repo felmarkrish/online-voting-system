@@ -10,20 +10,26 @@ export default function DashboardPage() {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Fetch elections + participants
-  useEffect(() => {
-    async function fetchElections() {
-      try {
-        const res = await fetch("/api/dashboard");
-        if (!res.ok) throw new Error("API returned status " + res.status);
-        const data = await res.json();
-        setElections(data);
-      } catch (err) {
-        console.error("Fetch error:", err);
-      }
+ // Fetch elections + participants
+useEffect(() => {
+  async function fetchElections() {
+    try {
+      const res = await fetch("/api/dashboard");
+      if (!res.ok) throw new Error("API returned status " + res.status);
+      const data = await res.json();
+      console.log("✅ API /api/dashboard response:", data); // debug log
+
+      // Sort by idx ascending
+      const sortedData = data.sort((a, b) => (a.idx || 0) - (b.idx || 0));
+
+      setElections(sortedData);
+    } catch (err) {
+      console.error("Fetch error:", err);
     }
-    fetchElections();
-  }, []);
+  }
+  fetchElections();
+}, []);
+
 
   // Get username from localStorage
   useEffect(() => {
@@ -75,13 +81,8 @@ export default function DashboardPage() {
             <li
               className="height-fit cursor-pointer hover:text-red-600"
               onClick={async () => {
-                // Call API to clear cookies
                 await fetch("/api/logout", { method: "POST" });
-
-                // Clear localStorage
                 localStorage.removeItem("username");
-
-                // Redirect to login
                 window.location.href = "/login";
               }}
             >
@@ -119,7 +120,10 @@ export default function DashboardPage() {
                 Total Candidates
               </h3>
               <p className="text-2xl sm:text-3xl font-bold mt-2">
-                {elections.reduce((acc, e) => acc + e.participants.length, 0)}
+                {elections.reduce(
+                  (acc, e) => acc + (e.participants?.length || 0),
+                  0
+                )}
               </p>
             </div>
           </div>
@@ -159,7 +163,7 @@ export default function DashboardPage() {
                         </button>
                       </td>
                       <td className="px-4 sm:px-6 py-3">
-                        {election.participants.length}
+                        {election.participants?.length || 0}
                       </td>
                     </tr>
 
@@ -180,7 +184,7 @@ export default function DashboardPage() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {election.participants.length > 0 ? (
+                                {election.participants?.length > 0 ? (
                                   election.participants.map((p, i) => (
                                     <tr key={i} className="border-b">
                                       <td className="px-4 py-2 border">

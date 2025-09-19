@@ -1,63 +1,66 @@
-// app/api/elections/route.js
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase"; // admin SDK
 import {
   collection,
-  doc,
+  query,
+  orderBy,
   getDocs,
+  getDoc,
   setDoc,
   updateDoc,
   deleteDoc,
-  query,
-  orderBy,
-  getDoc,
+  doc,
+  where,
 } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
-// GET all elections
+// ✅ GET all elections
 export async function GET() {
   try {
-    const electionsRef = collection(db, "electorial_tbl");
-    const q = query(electionsRef, orderBy("idx"));
+    const q = query(collection(db, "electorial_tbl"), orderBy("idx"));
     const snapshot = await getDocs(q);
-    const elections = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    return NextResponse.json(elections);
+
+    const elections = snapshot.docs.map((docSnap) => ({
+      electId: docSnap.id,
+      ...docSnap.data(),
+    }));
+
+    return NextResponse.json(elections, { status: 200 });
   } catch (err) {
     console.error("GET elections error:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-// POST new election (or update silently if exists)
+// ✅ POST new election
 export async function POST(req) {
   try {
     const { election_name, num_winners, createddate, idx } = await req.json();
     if (!election_name || !num_winners) {
       return NextResponse.json(
-        { error: "Election name and number of winners are required" },
+        { error: "Election name and number of winners required" },
         { status: 400 }
       );
     }
 
-    // Check if election name already exists
-    const electionsRef = collection(db, "electorial_tbl");
-    const snapshot = await getDocs(electionsRef);
-    const existing = snapshot.docs.find(doc => doc.data().election_name === election_name);
+    // Check for existing election with same name
+    const snapshot = await getDocs(collection(db, "electorial_tbl"));
+    const existing = snapshot.docs.find(
+      (d) => d.data().election_name === election_name
+    );
 
     if (existing) {
-      // Update silently
-      await updateDoc(doc(db, "electorial_tbl", existing.id), {
-        num_winners,
-        idx,
-      });
+      const electionRef = doc(db, "electorial_tbl", existing.id);
+      await updateDoc(electionRef, { num_winners, idx });
       return NextResponse.json({
         message: "Election updated silently",
         electId: existing.id,
       });
     }
 
-    // If not exists, create new election
-    const newElectID = `2025-${Date.now()}`; // simple unique ID
-    await setDoc(doc(db, "electorial_tbl", newElectID), {
+    const newElectID = `2025-${Date.now()}`;
+    const electionRef = doc(db, "electorial_tbl", newElectID);
+
+    await setDoc(electionRef, {
       electId: newElectID,
       election_name,
       num_winners,
@@ -75,7 +78,7 @@ export async function POST(req) {
   }
 }
 
-// PUT update election
+// ✅ PUT election
 export async function PUT(req) {
   try {
     const { electId, election_name, num_winners, idx } = await req.json();
@@ -84,25 +87,25 @@ export async function PUT(req) {
     }
 
     const electionRef = doc(db, "electorial_tbl", electId);
-    const electionSnap = await getDoc(electionRef);
-    if (!electionSnap.exists()) {
+    const snap = await getDoc(electionRef);
+
+    if (!snap.exists()) {
       return NextResponse.json({ error: "Election not found" }, { status: 404 });
     }
 
-    // Prevent duplicate names
-    const electionsRef = collection(db, "electorial_tbl");
-    const snapshot = await getDocs(electionsRef);
+    // Check duplicate election name
+    const snapshot = await getDocs(collection(db, "electorial_tbl"));
     const duplicate = snapshot.docs.find(
-      doc => doc.data().election_name === election_name && doc.id !== electId
+      (d) => d.data().election_name === election_name && d.id !== electId
     );
     if (duplicate) {
-      return NextResponse.json(
-        { error: "Another election with the same name exists" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Duplicate election name" }, { status: 400 });
     }
 
-    await updateDoc(electionRef, { election_name, num_winners, idx });
+    // Allow updating status if provided
+
+    await updateDoc(electionRef, updateData);
+
     return NextResponse.json({ message: "Election updated successfully" });
   } catch (err) {
     console.error("PUT elections error:", err);
@@ -110,7 +113,7 @@ export async function PUT(req) {
   }
 }
 
-// DELETE election
+// ✅ DELETE election
 export async function DELETE(req) {
   try {
     const { electId } = await req.json();
@@ -120,6 +123,7 @@ export async function DELETE(req) {
 
     const electionRef = doc(db, "electorial_tbl", electId);
     await deleteDoc(electionRef);
+
     return NextResponse.json({ message: "Election deleted successfully" });
   } catch (err) {
     console.error("DELETE elections error:", err);

@@ -44,15 +44,20 @@ function VoterPageInner() {
     if (storedUser) setUsername(storedUser);
   }, []);
 
-  useEffect(() => {
-    fetch(`/api/election?reqId=${reqId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setStartup(data.startup);
-        setElections(data.elections);
-      })
-      .catch((err) => console.error("Fetch error:", err));
-  }, [reqId]);
+ useEffect(() => {
+  fetch(`/api/election?reqId=${reqId}`)
+    .then((res) => res.json())
+    .then((data) => {
+      setStartup(data.startup);
+
+      // ✅ sort elections by idx ascending
+      const sortedElections = (data.elections || []).sort((a, b) => a.idx - b.idx);
+      setElections(sortedElections);
+      console.log("checkdata:", sortedElections);
+    })
+    .catch((err) => console.error("Fetch error:", err));
+}, [reqId]);
+
 
   const handleSelect = (electId, candidateId, num_winners) => {
     setSelected((prev) => {

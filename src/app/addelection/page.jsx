@@ -46,10 +46,10 @@ export default function AddElectionPage() {
           ? data
           : { year: currentYear, start: "", message: "", alreadyvotemessage: "" };
 
-      setYear(startupData.year);
-      setMessage(startupData.message);
-      setAlreadyVoteMessage(startupData.alreadyvotemessage);
-      setStartStatus(startupData.start);
+      setYear(startupData.year || currentYear);
+      setMessage(startupData.message || "");
+      setAlreadyVoteMessage(startupData.alreadyvotemessage || "");
+      setStartStatus(startupData.start || "");
     } catch (err) {
       console.error("Fetch startup error:", err);
       Swal.fire({ icon: "error", title: "Failed to fetch startup info" });
@@ -80,7 +80,7 @@ export default function AddElectionPage() {
           election_name: electionName,
           num_winners: numWinners,
           createddate: dateCreated,
-          Indexes: electionIndex,
+          idx: electionIndex,
         }),
       });
 
@@ -136,10 +136,10 @@ export default function AddElectionPage() {
   };
 
   const handleEdit = (election) => {
-    setElectionName(election.election_name);
-    setNumWinners(election.num_winners);
-    setElectionIndex(election.idx);
-    setEditingId(election.electId);
+    setElectionName(election.election_name || "");
+    setNumWinners(election.num_winners || 1);
+    setElectionIndex(election.idx || 1);
+    setEditingId(election.electId || null);
   };
 
   // Clock
@@ -186,7 +186,9 @@ export default function AddElectionPage() {
       if (res.ok) {
         Swal.fire({
           icon: "success",
-          title: `Election ${payload.start === "inprogress" ? "Started" : "Stopped"} (${year})`,
+          title: `Election ${
+            payload.start === "inprogress" ? "Started" : "Stopped"
+          } (${year})`,
         });
         setStartStatus(payload.start);
       } else {
@@ -229,16 +231,11 @@ export default function AddElectionPage() {
             <li className="cursor-pointer hover:text-blue-600">
               <a href="/listpopulation">Verify Membership</a>
             </li>
-             <li
+            <li
               className="height-fit cursor-pointer hover:text-red-600"
               onClick={async () => {
-                // Call API to clear cookies
                 await fetch("/api/logout", { method: "POST" });
-
-                // Clear localStorage
                 localStorage.removeItem("username");
-
-                // Redirect to login
                 window.location.href = "/login";
               }}
             >
@@ -249,9 +246,7 @@ export default function AddElectionPage() {
 
         {/* Main Content */}
         <main className="flex-1 p-6 md:p-8">
-          <h1 className="text-xl font-semibold mb-6 text-center">
-            Onboard Monitoring
-          </h1>
+          <h1 className="text-xl font-semibold mb-6 text-center">Onboard Monitoring</h1>
 
           {/* Forms */}
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 justify-center addelection">
@@ -276,12 +271,10 @@ export default function AddElectionPage() {
               <label className="block mb-2 font-medium">Number of Winners</label>
               <input
                 type="number"
-                value={numWinners || ""}
+                value={numWinners}
                 min={1}
                 onChange={(e) =>
-                  setNumWinners(
-                    e.target.value ? parseInt(e.target.value, 10) : ""
-                  )
+                  setNumWinners(e.target.value ? parseInt(e.target.value, 10) : 1)
                 }
                 className="w-full p-2 border rounded mb-4"
               />
@@ -289,12 +282,10 @@ export default function AddElectionPage() {
               <label className="block mb-2 font-medium">Index</label>
               <input
                 type="number"
-                value={electionIndex || ""}
+                value={electionIndex}
                 min={1}
                 onChange={(e) =>
-                  setElectionIndex(
-                    e.target.value ? parseInt(e.target.value, 10) : ""
-                  )
+                  setElectionIndex(e.target.value ? parseInt(e.target.value, 10) : 1)
                 }
                 className="w-full p-2 border rounded mb-4"
               />
@@ -330,7 +321,7 @@ export default function AddElectionPage() {
                 <label className="block font-medium mb-2">Year</label>
                 <input
                   type="number"
-                  value={year}
+                  value={year || currentYear}
                   readOnly
                   className="w-full p-2 border rounded cursor-not-allowed"
                 />
@@ -347,9 +338,7 @@ export default function AddElectionPage() {
               </div>
 
               <div>
-                <label className="block font-medium mb-2">
-                  Already Voted Message
-                </label>
+                <label className="block font-medium mb-2">Already Voted Message</label>
                 <textarea
                   value={alreadyVoteMessage}
                   onChange={(e) => setAlreadyVoteMessage(e.target.value)}

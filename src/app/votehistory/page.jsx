@@ -4,10 +4,12 @@ import React, { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import banner from "@/images/banner.jpg";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 // ✅ Inner component that uses useSearchParams
 function VoterHistoryPageInner() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const reqId = searchParams.get("reqId"); // get reqId from URL
   const withReqId = (path) => `${path}?reqId=${reqId}`;
 
@@ -49,27 +51,30 @@ function VoterHistoryPageInner() {
   }, []);
 
   // Fetch votes
-  useEffect(() => {
-    async function fetchVotes() {
-      if (!reqId) return; // ✅ only fetch if reqId exists
-      setLoading(true);
-      try {
-        const res = await fetch(
-          `/api/votehistory?year=${year}&voterId=${reqId}`
-        );
-        if (!res.ok) throw new Error("API returned " + res.status);
+// Fetch votes
+useEffect(() => {
+  async function fetchVotes() {
+    if (!reqId) return; // ✅ only fetch if reqId exists
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `/api/votehistory?year=${year}&voterId=${reqId}`
+      );
+      if (!res.ok) throw new Error("API returned " + res.status);
 
-        const data = await res.json();
-        setVotes(data.data || []); // use data.data from your API
-      } catch (err) {
-        console.error("Error fetching vote history:", err);
-      } finally {
-        setLoading(false);
-      }
+      const data = await res.json();
+      const sortedData = (data.data || []).sort((a, b) => a.idx - b.idx); // ✅ sort by idx
+      setVotes(sortedData);
+      console.log("checkdata;", sortedData);
+    } catch (err) {
+      console.error("Error fetching vote history:", err);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    fetchVotes();
-  }, [year, reqId]);
+  fetchVotes();
+}, [year, reqId]);
 
   // Render checks
   if (!checkedReqId) {
@@ -101,26 +106,26 @@ function VoterHistoryPageInner() {
           </h1>
           <span className="italic">Welcome {username || "Voter"}</span>
         </header>
-        <aside className="flex full-width w-64">
+       <aside className="flex full-width w-64">
           <ul className="voterscontainermenu flex height-fit margin-0 space-y-4 full-width flex-row justify-end items-center gap-5 p-8">
-            <li className="font-semibold cursor-pointer hover:text-blue-600">
+            <li className="height-fit margin-0 font-semibold cursor-pointer hover:text-blue-600">
               <a href={withReqId("/voterdashboard")}>Dashboard</a>
             </li>
-            <li className="cursor-pointer hover:text-blue-600">
+            <li className="height-fit margin-0 cursor-pointer hover:text-blue-600">
               <a href={withReqId("/votemonitoring")}>Vote Monitoring</a>
             </li>
-            <li className="cursor-pointer hover:text-blue-600">
+            <li className="height-fit margin-0 cursor-pointer hover:text-blue-600">
               <a href={withReqId("/votepage")}>Vote now</a>
             </li>
-            <li className="cursor-pointer hover:text-blue-600">
+            <li className="height-fit margin-0 cursor-pointer hover:text-blue-600">
               <a href={withReqId("/votehistory")}>Voting history</a>
             </li>
             <li
-              className="cursor-pointer hover:text-red-600"
+              className="height-fit cursor-pointer hover:text-red-600"
               onClick={async () => {
                 await fetch("/api/logout", { method: "POST" });
                 localStorage.removeItem("username");
-                window.location.href = "/login";
+                router.push("/login");
               }}
             >
               Logout

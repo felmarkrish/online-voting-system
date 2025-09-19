@@ -1,45 +1,39 @@
-// app/api/data/route.js
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase"; // adjust path if needed
 import {
   collection,
-  doc,
-  getDocs,
   query,
   orderBy,
-  limit,
-  where,
+  getDocs,
+  getDoc,
+  doc,
   setDoc,
   deleteDoc,
-  getDoc,
 } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
+// ✅ GET population + elections
 export async function GET() {
   try {
-    // ✅ Fetch population with active users
-    const populationRef = collection(db, "population");
-    const usersRef = collection(db, "users");
+    // Population ordered by createdAt
+    const popQuery = query(collection(db, "population"), orderBy("createdAt", "desc"));
+    const populationSnapshot = await getDocs(popQuery);
 
-    const populationSnapshot = await getDocs(
-      query(populationRef, orderBy("createdAt", "desc"))
-    );
-    const usersSnapshot = await getDocs(usersRef);
-
-    // Map users by reqId for quick lookup
+    // Users
+    const usersSnapshot = await getDocs(collection(db, "users"));
     const usersMap = {};
-    usersSnapshot.forEach((doc) => {
-      const data = doc.data();
-      if (data.userstatus === "Active") {
+    usersSnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      // 🔑 Make sure field name matches: in your users collection it's "userStatus" (capital S)
+      if (data.userStatus === "Active") {
         usersMap[data.reqId] = data;
       }
     });
 
-    // Combine population with active users
     const populationData = populationSnapshot.docs
       .map((docSnap) => {
         const popData = docSnap.data();
         const userData = usersMap[popData.reqId];
-        if (!userData) return null; // skip if no active user
+        if (!userData) return null;
         return {
           ...popData,
           username: userData.username,
@@ -47,29 +41,21 @@ export async function GET() {
           role: userData.role,
         };
       })
-      .filter(Boolean); // remove nulls
+      .filter(Boolean);
 
-    // Fetch elections
-    const electionsRef = collection(db, "electorial_tbl");
-    const electionsSnapshot = await getDocs(
-      query(electionsRef, orderBy("createdAt", "desc"))
-    );
-    const electionsData = electionsSnapshot.docs.map((doc) => doc.data());
+    // Elections ordered by createdAt
+    const electQuery = query(collection(db, "electorial_tbl"), orderBy("createddate", "desc"));
+    const electionsSnapshot = await getDocs(electQuery);
+    const electionsData = electionsSnapshot.docs.map((docSnap) => docSnap.data());
 
-    return NextResponse.json({
-      population: populationData,
-      elections: electionsData,
-    });
+    return NextResponse.json({ population: populationData, elections: electionsData });
   } catch (error) {
     console.error("Error fetching data:", error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
-// DELETE population + user
+// ✅ DELETE population + user
 export async function DELETE(req) {
   try {
     const { searchParams } = new URL(req.url);
@@ -79,9 +65,7 @@ export async function DELETE(req) {
       return NextResponse.json({ error: "Missing population ID" }, { status: 400 });
     }
 
-    // Delete population
     await deleteDoc(doc(db, "population", reqId));
-    // Delete user
     await deleteDoc(doc(db, "users", reqId));
 
     return NextResponse.json({ message: "Record deleted successfully" });
@@ -91,43 +75,32 @@ export async function DELETE(req) {
   }
 }
 
-// POST - Insert or update candidate in running_candidate
+// ✅ POST - Insert / update candidate
 export async function POST(req) {
   try {
     const { electId, candidateId } = await req.json();
-
     if (!electId || !candidateId) {
-      return NextResponse.json(
-        { error: "Missing electId or candidateId" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing electId or candidateId" }, { status: 400 });
     }
 
     const currentYear = new Date().getFullYear();
     const candidateRef = doc(db, "running_candidate", `${candidateId}-${currentYear}`);
     const candidateSnap = await getDoc(candidateRef);
 
-    if (candidateSnap.exists()) {
-      // Update election for candidate
-      await setDoc(candidateRef, { electId, candidateId, year: currentYear }, { merge: true });
-      return NextResponse.json({
-        success: true,
-        message: "Candidate updated for this year!",
-      });
-    }
-
-    // Insert new candidate
-    await setDoc(candidateRef, { electId, candidateId, year: currentYear });
+    await setDoc(
+      candidateRef,
+      { electId, candidateId, year: currentYear },
+      { merge: true }
+    );
 
     return NextResponse.json({
       success: true,
-      message: "Candidate registered successfully!",
+      message: candidateSnap.exists()
+        ? "Candidate updated for this year!"
+        : "Candidate registered successfully!",
     });
   } catch (error) {
     console.error("Insert error:", error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

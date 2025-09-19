@@ -31,7 +31,7 @@ export default function CandidateRegistrationPage() {
       const data = await res.json();
       if (Array.isArray(data.elections)) setElections(data.elections);
     } catch (err) {
-      console.error("Error fetching elections:", err);
+      console.error("fetching elections:", data.elections);
       Swal.fire({ icon: "error", title: "Failed to fetch elections" });
     }
   };
@@ -326,7 +326,7 @@ export default function CandidateRegistrationPage() {
                 >
                   <option value="">-- Select Election --</option>
                   {elections.map((election) => (
-                    <option key={election.id} value={election.electId}>
+                    <option key={election.electId} value={election.electId}>
                       {election.election_name}
                     </option>
                   ))}

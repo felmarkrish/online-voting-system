@@ -21,10 +21,11 @@ export default function LoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password: userpass }),
+
       });
 
       const data = await res.json();
-
+  
       if (res.ok && data.success) {
         localStorage.setItem("username", data.username);
 
@@ -36,28 +37,28 @@ export default function LoginPage() {
           }).then(() => {
             router.push("/dashboard");
           });
-        } else if (data.role === "Voter" && data.userstatus === "Active") {
-          Swal.fire({
-            icon: "success",
-            title: `✅ Welcome ${data.username}`,
-            showConfirmButton: true,
-          }).then(() => {
-            router.push(`/voterdashboard?reqId=${data.reqId}`);
-          });
-        } else if (data.userstatus === "Inactive") {
-          Swal.fire({
-            icon: "warning",
-            title: "⚠️ Account not Verified",
-            text: "Please contact the Administrator.",
-            showConfirmButton: true,
-          });
-        } else {
-          Swal.fire({
-            icon: "error",
-            title: "⚠️ Unknown role",
-            showConfirmButton: true,
-          });
-        }
+        } else if (data.role === "Voter" && data.userStatus === "Active") {
+  Swal.fire({
+    icon: "success",
+    title: `✅ Welcome ${data.username}`,
+    showConfirmButton: true,
+  }).then(() => {
+    router.push(`/voterdashboard?reqId=${data.reqId}`);
+  });
+} else if (data.userStatus === "Inactive") {
+  Swal.fire({
+    icon: "warning",
+    title: "⚠️ Account not Verified",
+    text: "Please contact the Administrator.",
+    showConfirmButton: true,
+  });
+} else {
+  Swal.fire({
+    icon: "error",
+    title: "⚠️ Unknown role",
+    showConfirmButton: true,
+  });
+}
       } else {
         Swal.fire({
           icon: "error",

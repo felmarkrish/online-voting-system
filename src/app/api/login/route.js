@@ -1,60 +1,65 @@
-// app/api/login/route.js
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
+import { collection, getDocs, query } from "firebase/firestore";
 
 export async function POST(req) {
   try {
     const { username, password } = await req.json();
-
     if (!username || !password) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    const usersRef = db.collection("users");
+    const usersRef = collection(db, "users");
+    const usersSnap = await getDocs(query(usersRef));
+    const users = usersSnap.docs.map(doc => doc.data());
 
-    let adminSnapshot = await usersRef.where("role", "==", "Admin").limit(1).get();
+    // ✅ Check if any active Admin exists
+    const hasActiveAdmin = users.some(
+      (u) => u.role === "Admin" && u.userStatus === "Active"
+    );
 
-    // First-time setup: no users → default admin login
-    if (adminSnapshot.empty) {
-      if (username === "admin" && password === "admin") {
-        const res = NextResponse.json({
-          success: true,
-          username: "admin",
-          role: "Admin",
-          userstatus: "Active",
-        });
-        res.cookies.set("logged_in", "true", { httpOnly: true, path: "/", maxAge: 3600 });
-        return res;
-      } else {
-        return NextResponse.json({ error: "Invalid default login" }, { status: 401 });
-      }
+    // ✅ Only allow default admin if no active Admin exists
+    if (!hasActiveAdmin && username.trim() === "admin" && password.trim() === "admin") {
+      const res = NextResponse.json({
+        success: true,
+        username: "admin",
+        role: "Admin",
+        userStatus: "Active",
+        reqId: "",
+      });
+      res.cookies.set("logged_in", "true", { httpOnly: true, path: "/", maxAge: 3600 });
+      res.cookies.set("role", "Admin", { httpOnly: true, path: "/", maxAge: 3600 });
+      res.cookies.set("reqId", "", { httpOnly: true, path: "/", maxAge: 3600 });
+      return res;
     }
 
-    // Normal login
-    const userSnapshot = await usersRef
-      .where("username", "==", username)
-      .where("userpass", "==", password)
-      .limit(1)
-      .get();
+    // ✅ Look for matching user in DB
+    const user = users.find(
+      (u) => u.username === username.trim() && u.userpass === password.trim()
+    );
 
-    if (userSnapshot.empty) {
+    if (!user) {
       return NextResponse.json({ error: "Invalid username or password" }, { status: 401 });
     }
 
-    const user = userSnapshot.docs[0].data();
+    if (user.userStatus === "Inactive") {
+      return NextResponse.json(
+        { error: "Account not verified", userStatus: "Inactive" },
+        { status: 403 }
+      );
+    }
 
+    // ✅ Successful login
     const res = NextResponse.json({
       success: true,
       username: user.username,
       role: user.role,
-      userstatus: user.userstatus,
-      reqId: user.reqId || null,
+      userStatus: user.userStatus,
+      reqId: user.reqId || "",
     });
-
     res.cookies.set("logged_in", "true", { httpOnly: true, path: "/", maxAge: 3600 });
     res.cookies.set("role", user.role, { httpOnly: true, path: "/", maxAge: 3600 });
     res.cookies.set("reqId", user.reqId || "", { httpOnly: true, path: "/", maxAge: 3600 });
-
     return res;
 
   } catch (err) {

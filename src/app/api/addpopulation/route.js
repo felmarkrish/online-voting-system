@@ -1,7 +1,16 @@
-// app/api/save-request/route.js
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase"; // Admin SDK
-import admin from "firebase-admin";
+import {
+  collection,
+  query,
+  orderBy,
+  where,
+  limit,
+  getDocs,
+  setDoc,
+  doc,
+  serverTimestamp,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export async function POST(req) {
   try {
@@ -21,7 +30,7 @@ export async function POST(req) {
       role,
     } = body;
 
-    // ✅ Validate required fields
+    // ✅ Required fields check
     if (
       !firstname ||
       !lastname ||
@@ -37,35 +46,52 @@ export async function POST(req) {
       !photo
     ) {
       return NextResponse.json(
-        { success: false, error: "⚠️ All fields are required" },
+        { success: false, error: "All fields required" },
         { status: 400 }
       );
     }
 
-    // ✅ Get current year
-    const year = new Date().getFullYear();
+    // ✅ Check if password already exists in users
+    const usersRef = collection(db, "users");
+    const passCheckQuery = query(usersRef, where("userpass", "==", userpass));
+    const passSnapshot = await getDocs(passCheckQuery);
 
-    // ✅ Find last reqId for this year in Firestore
-    const populationRef = db.collection("population");
-    const snapshot = await populationRef
-      .where("year", "==", year)
-      .orderBy("createdAt", "desc")
-      .limit(1)
-      .get();
+    if (!passSnapshot.empty) {
+      return NextResponse.json(
+        { success: false, error: "Password already exists. Choose another one." },
+        { status: 400 }
+      );
+    }
+
+    // ✅ Always save photo as PNG
+    let photoUrl = photo;
+    if (!photo.startsWith("data:image/png")) {
+      photoUrl = photo.replace(/^data:image\/\w+/, "data:image/png");
+    }
+
+    // ✅ Get year and last reqId
+    const year = new Date().getFullYear();
+    const populationRef = collection(db, "population");
+
+    const q = query(
+      populationRef,
+      where("year", "==", year),
+      orderBy("createdAt", "desc"),
+      limit(1)
+    );
+    const snapshot = await getDocs(q);
 
     let newNumber = 1;
     if (!snapshot.empty) {
       const lastDoc = snapshot.docs[0].data();
-      const lastReqId = lastDoc.reqId; // e.g., req-2025-004
-      const lastNum = parseInt(lastReqId.split("-")[2], 10);
+      const lastNum = parseInt(lastDoc.reqId.split("-")[2], 10);
       newNumber = lastNum + 1;
     }
 
-    // ✅ Build new reqId
     const newReqId = `req-${year}-${String(newNumber).padStart(3, "0")}`;
 
-    // ✅ Save population data
-    await populationRef.doc(newReqId).set({
+    // ✅ Save population
+    await setDoc(doc(db, "population", newReqId), {
       reqId: newReqId,
       firstname,
       lastname,
@@ -75,28 +101,28 @@ export async function POST(req) {
       email,
       residence,
       requestdate,
-      photo, // store base64 string
+      photo: photoUrl,
       year,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: serverTimestamp(),
     });
 
-    // ✅ Save user data
-    const usersRef = db.collection("users");
-    await usersRef.doc(newReqId).set({
+    // ✅ Save user
+    await setDoc(doc(db, "users", newReqId), {
       reqId: newReqId,
       username,
       userpass,
       role,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      userStatus: "Inactive",
+      createdAt: serverTimestamp(),
     });
 
     return NextResponse.json({
       success: true,
       reqId: newReqId,
-      message: "✅ Request and user saved successfully",
+      message: "Request and user saved successfully (photo stored as PNG)",
     });
   } catch (error) {
-    console.error("❌ Error saving request:", error);
+    console.error("Error saving request:", error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }

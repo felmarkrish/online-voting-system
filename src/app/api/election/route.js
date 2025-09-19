@@ -5,11 +5,10 @@ import {
   collection,
   doc,
   getDocs,
+  addDoc,
   getDoc,
   query,
   where,
-  addDoc,
-  setDoc,
 } from "firebase/firestore";
 
 export async function GET(req) {
@@ -47,6 +46,7 @@ export async function GET(req) {
     const electionsRef = collection(db, "electorial_tbl");
     const electionsSnap = await getDocs(electionsRef);
     const elections = [];
+
     for (const docSnap of electionsSnap.docs) {
       const el = docSnap.data();
       el.id = docSnap.id;
@@ -79,9 +79,13 @@ export async function GET(req) {
         electId: el.id,
         election_name: el.election_name,
         num_winners: el.num_winners || 1,
+        idx: el.idx || 0, // ✅ include idx here
         candidates,
       });
     }
+
+    // ✅ sort elections by idx ascending
+    elections.sort((a, b) => a.idx - b.idx);
 
     return NextResponse.json({
       startup: {
@@ -96,44 +100,32 @@ export async function GET(req) {
   }
 }
 
+
 export async function POST(req) {
   try {
     const { reqId, selected } = await req.json();
-    const currentYear = new Date().getFullYear();
-    const monthdate = new Date().toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-
-    if (!reqId) {
-      return NextResponse.json({ error: "Missing voter reqId" }, { status: 400 });
+    if (!reqId || !selected) {
+      return NextResponse.json({ error: "Missing reqId or votes" }, { status: 400 });
     }
 
-    // ✅ Loop through elections
-    for (const [electionId, candidates] of Object.entries(selected)) {
+    const currentYear = new Date().getFullYear();
+    const votedRef = collection(db, "votedetails");
+
+    for (const [electId, candidates] of Object.entries(selected)) {
       for (const candidateId of candidates) {
-        const voteRef = doc(db, "votedetails", `${electionId}_${candidateId}_${reqId}`);
-        const voteSnap = await getDoc(voteRef);
-
-        if (voteSnap.exists()) {
-          return NextResponse.json({ error: "Already voted!" }, { status: 400 });
-        }
-
-        // ✅ Save vote
-        await setDoc(voteRef, {
+        await addDoc(votedRef, {
           voterId: reqId,
-          popId: candidateId,
-          electionId,
+          electId,
+          candidateId,
           year: currentYear,
-          monthdate,
+          createdAt: new Date(),
         });
       }
     }
 
-    return NextResponse.json({ success: true, message: "Vote(s) saved" });
+    return NextResponse.json({ success: true });
   } catch (err) {
     console.error("POST voting error:", err);
-    return NextResponse.json({ error: "Failed to save votes" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to submit votes" }, { status: 500 });
   }
 }

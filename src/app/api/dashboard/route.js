@@ -1,38 +1,42 @@
-// app/api/elections/route.js
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase"; // adjust path
-import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
+import { db } from "@/lib/firebase"; // Firestore client
+import { collection, getDocs } from "firebase/firestore";
 
 export async function GET() {
   try {
     // ✅ Fetch all elections
-    const electionsRef = collection(db, "electorial_tbl");
-    const electionsSnapshot = await getDocs(query(electionsRef, orderBy("createdAt")));
-    const elections = electionsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const electionsSnapshot = await getDocs(collection(db, "electorial_tbl"));
+    let elections = electionsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    // ✅ Sort manually by createdAt if available
+    elections.sort((a, b) => {
+      const aDate = a.createdAt?.toMillis?.() || 0;
+      const bDate = b.createdAt?.toMillis?.() || 0;
+      return bDate - aDate;
+    });
 
     // ✅ Fetch all running candidates
-    const candidatesRef = collection(db, "running_candidate");
-    const candidatesSnapshot = await getDocs(candidatesRef);
+    const candidatesSnapshot = await getDocs(collection(db, "running_candidate"));
     const candidates = candidatesSnapshot.docs.map((doc) => doc.data());
 
-    // ✅ Fetch population (candidate details + photo)
-    const populationRef = collection(db, "population");
-    const populationSnapshot = await getDocs(populationRef);
+    // ✅ Fetch population
+    const populationSnapshot = await getDocs(collection(db, "population"));
     const populationMap = {};
-    populationSnapshot.docs.forEach((doc) => {
-      const data = doc.data();
-      populationMap[data.reqId] = {
-        ...data,
-        photo: data.photo
-          ? `data:image/jpeg;base64,${data.photo}` // assuming stored as base64 string
-          : null,
-      };
-    });
+   populationSnapshot.docs.forEach((doc) => {
+  const data = doc.data();
+  populationMap[data.reqId] = {
+    ...data,
+    photo: data.photo || null, // ✅ no extra prefix
+  };
+});
 
     // ✅ Combine elections with participants
     const data = elections.map((el) => {
       const participants = candidates
-        .filter((c) => c.electId === el.id) // match election ID
+        .filter((c) => c.electId === el.id)
         .map((c) => {
           const popData = populationMap[c.candidateId];
           return popData
@@ -43,11 +47,12 @@ export async function GET() {
               }
             : null;
         })
-        .filter(Boolean); // remove nulls
+        .filter(Boolean);
 
       return {
         id: el.id,
         name: el.election_name,
+        idx: el.idx || 0, // include idx in API response
         participants,
       };
     });
@@ -56,7 +61,7 @@ export async function GET() {
   } catch (error) {
     console.error("API GET error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal Server Error", details: error.message },
       { status: 500 }
     );
   }

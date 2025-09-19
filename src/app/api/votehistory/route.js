@@ -16,7 +16,7 @@ export async function GET(req) {
       );
     }
 
-    // ✅ Query votedetails collection
+    // 1. Fetch all votes for this voter/year
     const voteQuery = query(
       collection(db, "votedetails"),
       where("voterId", "==", voterId),
@@ -24,26 +24,58 @@ export async function GET(req) {
     );
     const voteSnap = await getDocs(voteQuery);
 
-    const data = [];
+    if (voteSnap.empty) {
+      return NextResponse.json({ success: true, data: [] });
+    }
 
-    for (const voteDoc of voteSnap.docs) {
+    // 2. Load population (reqId → data)
+    const popSnap = await getDocs(collection(db, "population"));
+    const populationMap = {};
+    popSnap.forEach((doc) => {
+      const d = doc.data();
+      if (d.reqId) {
+        populationMap[d.reqId] = {
+          firstname: d.firstname || "",
+          lastname: d.lastname || "",
+          photo: d.photo || null,
+        };
+      }
+    });
+
+    // 3. Load elections (electId → data)
+    const electSnap = await getDocs(collection(db, "electorial_tbl"));
+    const electionMap = {};
+    electSnap.forEach((doc) => {
+      const d = doc.data();
+      if (d.electId) {
+        electionMap[d.electId] = {
+          election_name: d.election_name || "Unknown",
+          num_winners: d.num_winners || 1,
+          idx: d.idx || 0,
+        };
+      }
+    });
+
+    // 4. Join vote + population + election
+    const data = voteSnap.docs.map((voteDoc) => {
       const vote = voteDoc.data();
 
-      // Fetch voter details
-      const popRef = collection(db, "population");
-      const popQuery = query(popRef, where("reqId", "==", vote.popId));
-      const popSnap = await getDocs(popQuery);
+      const person = populationMap[vote.candidateId] || {}; // <-- fixed
+      const election = electionMap[vote.electId] || {}; // <-- fixed
 
-      const popData = popSnap.docs[0]?.data() || {};
-
-      data.push({
-        elect_name: vote.elect_name,
+      return {
+        elect_name: election.election_name || "Unknown",
         monthdate: vote.monthdate,
-        firstname: popData.firstname || "",
-        lastname: popData.lastname || "",
-        photo: popData.photo || null, // base64 stored directly in Firestore
-      });
-    }
+        firstname: person.firstname || "Unknown",
+        lastname: person.lastname || "",
+        photo: person.photo || null,
+        num_winners: election.num_winners || 1,
+        idx: election.idx || 0,
+      };
+    });
+
+    // 5. Sort by monthdate DESC
+    data.sort((a, b) => new Date(b.monthdate) - new Date(a.monthdate));
 
     return NextResponse.json({ success: true, data });
   } catch (error) {

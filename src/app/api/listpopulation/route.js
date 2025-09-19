@@ -1,37 +1,37 @@
-// app/api/population/route.js
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase"; // adjust path
 import {
   collection,
   doc,
-  getDoc,
   getDocs,
   setDoc,
   deleteDoc,
 } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
-// GET - fetch all population joined with users
+// ✅ GET - fetch all population joined with users
 export async function GET() {
   try {
-    const populationRef = collection(db, "population");
-    const populationSnap = await getDocs(populationRef);
+    const populationSnap = await getDocs(collection(db, "population"));
+    const usersSnap = await getDocs(collection(db, "users"));
 
-    const data = [];
+    const usersMap = {};
+    usersSnap.forEach((docSnap) => {
+      const data = docSnap.data();
+      usersMap[data.reqId] = data;
+    });
 
-    for (const popDoc of populationSnap.docs) {
+    const data = populationSnap.docs.map((popDoc) => {
       const pop = popDoc.data();
-      const userDoc = await getDoc(doc(db, "users", pop.reqId));
-      const user = userDoc.exists() ? userDoc.data() : {};
-
-      data.push({
+      const user = usersMap[pop.reqId] || {};
+      return {
         ...pop,
         username: user.username || null,
         userpass: user.userpass || null,
         role: user.role || null,
-        userstatus: user.userstatus || null,
-        photo: pop.photo || null, // assume stored as base64 string
-      });
-    }
+        userstatus: user.userStatus || null, // 🔑 careful: your DB field is userStatus (capital S)
+        photo: pop.photo || null,
+      };
+    });
 
     return NextResponse.json(data);
   } catch (err) {
@@ -40,7 +40,7 @@ export async function GET() {
   }
 }
 
-// PUT - update existing population record
+// ✅ PUT - update existing population record
 export async function PUT(req) {
   try {
     const body = await req.json();
@@ -56,7 +56,7 @@ export async function PUT(req) {
       username,
       userpass,
       role,
-      photo, // base64 string
+      photo,
     } = body;
 
     if (!reqId) {
@@ -64,18 +64,16 @@ export async function PUT(req) {
     }
 
     // Update population
-    const popRef = doc(db, "population", reqId);
     await setDoc(
-      popRef,
+      doc(db, "population", reqId),
       { firstname, lastname, age, contact, gender, email, residence, photo },
       { merge: true }
     );
 
     // Update user
-    const userRef = doc(db, "users", reqId);
     await setDoc(
-      userRef,
-      { username, userpass, role, userstatus: "Active" },
+      doc(db, "users", reqId),
+      { username, userpass, role, userStatus: "Active" },
       { merge: true }
     );
 
@@ -89,7 +87,7 @@ export async function PUT(req) {
   }
 }
 
-// DELETE - remove population and user
+// ✅ DELETE - remove population and user
 export async function DELETE(req) {
   try {
     const { searchParams } = new URL(req.url);
