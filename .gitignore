@@ -19,7 +19,6 @@
 
 # production
 /build
-.env.local
 
 # misc
 .DS_Store
@@ -41,4 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-echo "firebase-service-account.json" >> .gitignore
+.env*
+firebase-service-account.json
+*.pem
