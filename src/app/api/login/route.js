@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, query } from "firebase/firestore";
+import { db } from "@/lib/firebaseAdmin"; // make sure this uses admin SDK
 
 export async function POST(req) {
   try {
@@ -9,9 +8,10 @@ export async function POST(req) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    const usersRef = collection(db, "users");
-    const usersSnap = await getDocs(query(usersRef));
-    const users = usersSnap.docs.map(doc => doc.data());
+    // ✅ Use admin SDK for querying
+    const usersRef = db.collection("users");
+    const snapshot = await usersRef.get();
+    const users = snapshot.docs.map(doc => doc.data());
 
     // ✅ Check if any active Admin exists
     const hasActiveAdmin = users.some(
