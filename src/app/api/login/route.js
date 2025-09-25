@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase"; // make sure this uses admin SDK
+import { db } from "@/lib/firebase";
+import { collection, getDocs, query } from "firebase/firestore";
 
 export async function POST(req) {
   try {
@@ -8,17 +9,16 @@ export async function POST(req) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    // ✅ Use admin SDK for querying
-    const usersRef = db.collection("users");
-    const snapshot = await usersRef.get();
-    const users = snapshot.docs.map(doc => doc.data());
+    // Fetch all users
+    const usersRef = collection(db, "users");
+    const usersSnap = await getDocs(query(usersRef));
+    const users = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // ✅ Check if any active Admin exists
+    // Default admin if no active admin exists
     const hasActiveAdmin = users.some(
       (u) => u.role === "Admin" && u.userStatus === "Active"
     );
 
-    // ✅ Only allow default admin if no active Admin exists
     if (!hasActiveAdmin && username.trim() === "admin" && password.trim() === "admin") {
       const res = NextResponse.json({
         success: true,
@@ -33,7 +33,7 @@ export async function POST(req) {
       return res;
     }
 
-    // ✅ Look for matching user in DB
+    // Match username + password
     const user = users.find(
       (u) => u.username === username.trim() && u.userpass === password.trim()
     );
@@ -49,7 +49,7 @@ export async function POST(req) {
       );
     }
 
-    // ✅ Successful login
+    // Successful login
     const res = NextResponse.json({
       success: true,
       username: user.username,
@@ -57,9 +57,11 @@ export async function POST(req) {
       userStatus: user.userStatus,
       reqId: user.reqId || "",
     });
+
     res.cookies.set("logged_in", "true", { httpOnly: true, path: "/", maxAge: 3600 });
     res.cookies.set("role", user.role, { httpOnly: true, path: "/", maxAge: 3600 });
     res.cookies.set("reqId", user.reqId || "", { httpOnly: true, path: "/", maxAge: 3600 });
+
     return res;
 
   } catch (err) {
