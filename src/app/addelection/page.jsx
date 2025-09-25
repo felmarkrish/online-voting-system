@@ -204,14 +204,13 @@ export default function AddElectionPage() {
   return (
     <div className="main-bg min-h-screen flex flex-col bg-gray-100">
       {/* Header */}
-      <header className="bg-color-2 text-white py-4 px-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-        <h1 className="text-lg sm:text-2xl font-bold text-center sm:text-left">
-          Online Voting System – <span className="font-normal">Admin Panel</span>
+     <header className="bg-color-2 text-white py-4 px-6 flex justify-between items-center">
+        <h1 className="text-2xl font-bold">
+          Online Voting System –{" "}
+          <span className="font-normal">Admin Panel</span>
         </h1>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm sm:text-base">
-          <span>{currentTime}</span>
-          <span className="italic">Welcome {username || "Admin"}</span>
-        </div>
+        <div>{currentTime}</div>
+        <span className="italic">Welcome {username || "Admin"}</span>
       </header>
 
       {/* Body */}

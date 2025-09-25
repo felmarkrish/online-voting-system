@@ -372,15 +372,26 @@ a:hover ul > li:visited {
   }
 }
 @media (max-width: 870px) {
-    .candidateregistration {
+    .candidateregistration,
+    .global-parent {
       flex-direction: column;
     }
+    .global-parent > aside,
     .candidateregistration > aside {
       width: 100%;
       box-shadow: 0 2px 1px rgb(255, 255, 255);
     }
+    .global-parent > aside > ul > li,
     .candidateregistration > aside > ul > li {
       text-align: center;
+    }
+    header {
+      flex-wrap: wrap;
+      text-align: center;
+      gap: 25px;
+    }
+    header > h1 {
+      width: 100%;
     }
 }
 @media (max-width: 767px) {
@@ -431,6 +442,12 @@ a:hover ul > li:visited {
  
   .voter-bg .big-paadding-1 .textcontainer {
     width: 100% !important;
+  }
+}
+@media (max-width: 460px) {
+  header {
+    gap: 10px;
+    flex-direction: column;
   }
 }
 @media (max-width: 450px) {

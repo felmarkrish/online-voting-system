@@ -9,6 +9,7 @@ export default function DashboardPage() {
   const [elections, setElections] = useState([]);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState("");
 
  // Fetch elections + participants
 useEffect(() => {
@@ -30,6 +31,24 @@ useEffect(() => {
   fetchElections();
 }, []);
 
+  // Clock
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      const formatted = new Intl.DateTimeFormat("en-US", {
+        month: "long",
+        day: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      }).format(now);
+      setCurrentTime(formatted);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
 
   // Get username from localStorage
   useEffect(() => {
@@ -40,31 +59,20 @@ useEffect(() => {
   return (
     <div className="main-bg min-h-screen flex flex-col bg-gray-100">
       {/* Header */}
-      <header className="bg-color-2 text-white py-4 px-6 flex justify-between items-center">
-        <h1 className="text-xl sm:text-2xl font-bold">
+       <header className="bg-color-2 text-white py-4 px-6 flex justify-between items-center">
+        <h1 className="text-2xl font-bold">
           Online Voting System –{" "}
           <span className="font-normal">Admin Panel</span>
         </h1>
-        <div className="flex items-center gap-4">
-          <span className="italic hidden sm:inline">
-            Welcome {username || "Admin"}
-          </span>
-          <button
-            className="sm:hidden text-white focus:outline-none"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            <FontAwesomeIcon icon={faBars} size="lg" />
-          </button>
-        </div>
+        <div>{currentTime}</div>
+        <span className="italic">Welcome {username || "Admin"}</span>
       </header>
 
-      <div className="flex flex-1">
+
+      <div className="flex flex-1 global-parent">
         {/* Sidebar */}
         <aside
-          className={`bg-blurry w-64 shadow-md p-6 fixed sm:static inset-y-0 left-0 transform ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } sm:translate-x-0 transition-transform duration-200 ease-in-out z-20`}
-        >
+          className="bg-blurry w-64 shadow-md p-6">
           <ul className="space-y-4">
             <li className="font-semibold cursor-pointer hover:text-blue-600">
               <a href="/dashboard">Dashboard</a>
