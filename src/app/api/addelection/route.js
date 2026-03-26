@@ -9,7 +9,7 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-  where,
+  // where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -81,7 +81,7 @@ export async function POST(req) {
 // ✅ PUT election
 export async function PUT(req) {
   try {
-    const { electId, election_name, num_winners, idx } = await req.json();
+    const { electId, election_name, num_winners } = await req.json();
     if (!electId || !election_name || !num_winners) {
       return NextResponse.json({ error: "Missing data" }, { status: 400 });
     }

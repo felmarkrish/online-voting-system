@@ -4,7 +4,7 @@ import { db } from "@/lib/firebase";
 
 export async function GET(req) {
   try {
-    const { searchParams } = new URL(req.url);
+    // const { searchParams } = new URL(req.url);
     const year = new Date().getFullYear();
 
     // =========================
