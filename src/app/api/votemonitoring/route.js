@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-export async function GET(req) {
+export async function GET() {
   try {
     // const { searchParams } = new URL(req.url);
     const year = new Date().getFullYear();
