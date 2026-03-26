@@ -20,7 +20,15 @@ export default function AddElectionPage() {
   const [startStatus, setStartStatus] = useState("");
   const [loading, setLoading] = useState(false);
 
+   // set active hamburger
+  const [activehamburger, setActiveHamburger] = useState(false);
+
   const DB_API = "/api/addelection";
+
+  // open close handleCloseHamburger
+ const handleCloseHamburger = () => {
+  setActiveHamburger(!activehamburger);
+};
 
   // Fetch elections
   const fetchElections = async () => {
@@ -216,32 +224,44 @@ export default function AddElectionPage() {
       {/* Body */}
       <div className="flex flex-1 flex-col md:flex-row">
         {/* Sidebar */}
-        <aside className="bg-blurry w-full md:w-64 shadow-md p-6">
-          <ul className="space-y-4 text-center md:text-left">
-            <li className="font-semibold hover:text-blue-600">
+        <aside className="menu-sidebar">
+          <div className={`hamburger-container ${activehamburger ? 'active' : ''}`}>
+              <button type="button"
+         onClick={handleCloseHamburger}
+        className={` button-hamburger ${activehamburger ? 'active' : ''}`}>
+        </button>
+          <ul className={`space-y-4 hamburger ${activehamburger ? 'active' : ''}`}>
+            <li className="font-semibold cursor-pointer hover:text-blue-600" >
               <a href="/dashboard">Dashboard</a>
             </li>
-            <li className="hover:text-blue-600">
+            <li className="font-semibold cursor-pointer hover:text-blue-600">
               <a href="/addelection">Add Election</a>
             </li>
-            <li className="hover:text-blue-600">
+            <li className="font-semibold cursor-pointer hover:text-blue-600">
               <a href="/candidateregistration">Register Candidates</a>
             </li>
-            <li className="cursor-pointer hover:text-blue-600">
-              <a href="/listpopulation">Verify Membership</a>
+            <li className="font-semibold cursor-pointer hover:text-blue-600">
+              <a href="/listpopulation">Verify/Edit Membership</a>
             </li>
             <li
               className="height-fit cursor-pointer hover:text-red-600"
               onClick={async () => {
+                // Call API to clear cookies
                 await fetch("/api/logout", { method: "POST" });
+
+                // Clear localStorage
                 localStorage.removeItem("username");
+
+                // Redirect to login
                 window.location.href = "/login";
               }}
             >
               Logout
             </li>
           </ul>
+          </div>
         </aside>
+
 
         {/* Main Content */}
         <main className="flex-1 p-6 md:p-8">

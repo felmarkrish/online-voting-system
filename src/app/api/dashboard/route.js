@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase"; // Firestore client
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
 export async function GET() {
   try {
@@ -18,20 +18,26 @@ export async function GET() {
       return bDate - aDate;
     });
 
-    // ✅ Fetch all running candidates
-    const candidatesSnapshot = await getDocs(collection(db, "running_candidate"));
+    // ✅ Fetch candidates for the current year only
+    const currentYear = new Date().getFullYear();
+    const candidatesQuery = query(
+      collection(db, "running_candidate"),
+      where("year", "==", currentYear)
+    );
+
+    const candidatesSnapshot = await getDocs(candidatesQuery);
     const candidates = candidatesSnapshot.docs.map((doc) => doc.data());
 
     // ✅ Fetch population
     const populationSnapshot = await getDocs(collection(db, "population"));
     const populationMap = {};
-   populationSnapshot.docs.forEach((doc) => {
-  const data = doc.data();
-  populationMap[data.reqId] = {
-    ...data,
-    photo: data.photo || null, // ✅ no extra prefix
-  };
-});
+    populationSnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      populationMap[data.reqId] = {
+        ...data,
+        photo: data.photo || null,
+      };
+    });
 
     // ✅ Combine elections with participants
     const data = elections.map((el) => {
@@ -52,7 +58,7 @@ export async function GET() {
       return {
         id: el.id,
         name: el.election_name,
-        idx: el.idx || 0, // include idx in API response
+        idx: el.idx || 0,
         participants,
       };
     });

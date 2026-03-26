@@ -11,6 +11,14 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
 
+  // set active hamburger
+  const [activehamburger, setActiveHamburger] = useState(false);
+
+    // open close handleCloseHamburger
+ const handleCloseHamburger = () => {
+  setActiveHamburger(!activehamburger);
+};
+
  // Fetch elections + participants
 useEffect(() => {
   async function fetchElections() {
@@ -71,33 +79,44 @@ useEffect(() => {
 
       <div className="flex flex-1 global-parent">
         {/* Sidebar */}
-        <aside
-          className="bg-blurry w-64 shadow-md p-6">
-          <ul className="space-y-4">
-            <li className="font-semibold cursor-pointer hover:text-blue-600">
+        <aside className="menu-sidebar">
+          <div className={`hamburger-container ${activehamburger ? 'active' : ''}`}>
+              <button type="button"
+         onClick={handleCloseHamburger}
+        className={` button-hamburger ${activehamburger ? 'active' : ''}`}>
+        </button>
+          <ul className={`space-y-4 hamburger ${activehamburger ? 'active' : ''}`}>
+            <li className="font-semibold cursor-pointer hover:text-blue-600" >
               <a href="/dashboard">Dashboard</a>
             </li>
-            <li className="cursor-pointer hover:text-blue-600">
+            <li className="font-semibold cursor-pointer hover:text-blue-600">
               <a href="/addelection">Add Election</a>
             </li>
-            <li className="cursor-pointer hover:text-blue-600">
+            <li className="font-semibold cursor-pointer hover:text-blue-600">
               <a href="/candidateregistration">Register Candidates</a>
             </li>
-            <li className="cursor-pointer hover:text-blue-600">
-              <a href="/listpopulation">Verify Membership</a>
+            <li className="font-semibold cursor-pointer hover:text-blue-600">
+              <a href="/listpopulation">Verify/Edit Membership</a>
             </li>
             <li
               className="height-fit cursor-pointer hover:text-red-600"
               onClick={async () => {
+                // Call API to clear cookies
                 await fetch("/api/logout", { method: "POST" });
+
+                // Clear localStorage
                 localStorage.removeItem("username");
+
+                // Redirect to login
                 window.location.href = "/login";
               }}
             >
               Logout
             </li>
           </ul>
+          </div>
         </aside>
+
 
         {/* Overlay for mobile */}
         {sidebarOpen && (

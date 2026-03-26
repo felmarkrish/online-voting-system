@@ -9,6 +9,11 @@ export default function ListPopulationPage() {
   const [message, setMessage] = useState("");
   const [reqIdToUpdate, setReqIdToUpdate] = useState(null);
   const [population, setPopulation] = useState([]);
+
+
+  // set active hamburger
+  const [activeRow, setActiveRow] = useState(null);
+  const [activehamburger, setActiveHamburger] = useState(false);
   
 
   // Pagination + search
@@ -30,6 +35,14 @@ export default function ListPopulationPage() {
   const [username, setUsername] = useState("");
 
   const DB_API = "/api/listpopulation"; // ✅ relative path works in Next.js
+
+
+  // open close handleCloseHamburger
+ const handleCloseHamburger = () => {
+  setActiveHamburger(!activehamburger);
+};
+
+  // Adding Active Class function
 
   // Fetch Population
   const fetchlistpopultion = async () => {
@@ -255,6 +268,9 @@ const clearForm = () => {
 
        // ✅ Set the photo here
   setPhoto(population.photo || null);
+
+   // ✅ ADD THIS (for active row)
+  setActiveRow(population.reqId);
   };
 
   // Running datetime
@@ -289,19 +305,24 @@ const clearForm = () => {
 
       <div className="flex flex- 1 verifymember">
         {/* Sidebar */}
-        <aside className="bg-blurry w-64 shadow-md p-6">
-          <ul className="space-y-4">
-            <li className="font-semibold cursor-pointer hover:text-blue-600">
+        <aside className="menu-sidebar">
+          <div className={`hamburger-container ${activehamburger ? 'active' : ''}`}>
+              <button type="button"
+         onClick={handleCloseHamburger}
+        className={` button-hamburger ${activehamburger ? 'active' : ''}`}>
+        </button>
+          <ul className={`space-y-4 hamburger ${activehamburger ? 'active' : ''}`}>
+            <li className="font-semibold cursor-pointer hover:text-blue-600" >
               <a href="/dashboard">Dashboard</a>
             </li>
-            <li className="cursor-pointer hover:text-blue-600">
+            <li className="font-semibold cursor-pointer hover:text-blue-600">
               <a href="/addelection">Add Election</a>
             </li>
-            <li className="cursor-pointer hover:text-blue-600">
+            <li className="font-semibold cursor-pointer hover:text-blue-600">
               <a href="/candidateregistration">Register Candidates</a>
             </li>
-            <li className="cursor-pointer hover:text-blue-600">
-              <a href="/listpopulation">Verify Membership</a>
+            <li className="font-semibold cursor-pointer hover:text-blue-600">
+              <a href="/listpopulation">Verify/Edit Membership</a>
             </li>
             <li
               className="height-fit cursor-pointer hover:text-red-600"
@@ -319,6 +340,7 @@ const clearForm = () => {
               Logout
             </li>
           </ul>
+          </div>
         </aside>
 
         {/* Main content */}
@@ -533,7 +555,7 @@ const clearForm = () => {
                   type="submit"
                   className="button-pad bg-color-blue text-white py-2 rounded hover:bg-blue-700 transition"
                 >
-                  Verified
+                  Verify/Update
                 </button>
               </div>
     
@@ -555,61 +577,84 @@ const clearForm = () => {
               />
             </div>
 
-            <table className="min-w-full border border-gray-300">
-              <thead>
-                <tr className="bg-color-2">
-                  <th className="border px-4 py-2">ID</th>
-                  <th className="border px-4 py-2">First Name</th>
-                  <th className="border px-4 py-2">Last Name</th>
-                  <th className="border px-4 py-2">Residence</th>
-                  <th className="border px-4 py-2">Status</th>
-                  <th className="border px-4 py-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedPopulation.length > 0 ? (
-                  paginatedPopulation.map((pop, index) => (
-                    <tr key={`${pop.reqId}-${index}`}>
-                      <td className="border px-4 py-2">{pop.reqId}</td>
-                      <td className="border px-4 py-2">{pop.firstname}</td>
-                      <td className="border px-4 py-2">{pop.lastname}</td>
-                      <td className="border px-4 py-2">{pop.residence}</td>
-                      <td
-                        className={`border px-4 py-2 text-white ${
-                          pop.userstatus === "Active"
-                            ? "bg-green-500"
-                            : pop.userstatus === "Inactive"
-                            ? "bg-red-500"
-                            : "bg-gray-400"
-                        }`}
-                      >
-                        {pop.userstatus}
-                      </td>
-                      <td className="flex justify-center border px-4 py-2 space-x-2">
-                        <button
-                          onClick={() => handleEdit(pop)}
-                          className="bg-color-yellow text-white px-2 py-1 rounded"
-                        >
-                          View
-                        </button>
-                          <button
-                          onClick={() => handleDelete(pop.reqId)}
-                          className="bg-color-red text-white px-2 py-1 rounded"
-                        >
-                          Decline Request
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" className="text-center py-4">
-                      No population found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+         <table className="min-w-[1196px] md:min-w-full border border-gray-300">
+  <thead>
+    <tr className="bg-color-2 row-header">
+      <th className="border px-4 py-2">ID</th>
+      <th className="border px-4 py-2">First Name</th>
+      <th className="border px-4 py-2">Last Name</th>
+      <th className="border px-4 py-2">Residence</th>
+      <th className="border px-4 py-2">Status</th>
+      <th className="border px-4 py-2">Actions</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {paginatedPopulation.length > 0 ? (
+      paginatedPopulation.map((pop, index) => (
+        <tr   className={`rows ${activeRow === pop.reqId ? "active" : ""}`}
+          key={`${pop.reqId}-${index}`}>
+          <td className="border px-4 py-2">{pop.reqId}</td>
+          <td className="border px-4 py-2">{pop.firstname}</td>
+          <td className="border px-4 py-2">{pop.lastname}</td>
+          <td className="border px-4 py-2">{pop.residence}</td>
+
+          {/* STATUS */}
+          <td
+            className={`border px-4 py-2 text-white ${
+              pop.userstatus === "Active"
+                ? "bg-green-500"
+                : pop.userstatus === "Inactive"
+                ? "bg-red-500"
+                : "bg-gray-400"
+            }`}
+          >
+            {pop.userstatus}
+          </td>
+
+          {/* ACTIONS */}
+          <td className="flex justify-center border px-4 py-2 space-x-2">
+            <button
+              onClick={() => handleEdit(pop)}
+              className="bg-color-yellow text-white px-2 py-1 rounded"
+            >
+              View
+            </button>
+
+            {pop.userstatus === "Active" ? (
+              <button
+                onClick={() => handleDelete(pop.reqId)}
+                className="bg-color-red text-white px-2 py-1 rounded"
+              >
+                Delete
+              </button>
+            ) : pop.userstatus === "Inactive" ? (
+              <button
+                onClick={() => handleDelete(pop.reqId)}
+                className="bg-color-red text-white px-2 py-1 rounded"
+              >
+                Decline
+              </button>
+            ) : (
+              <button
+                disabled
+                className="bg-gray-300 text-white px-2 py-1 rounded cursor-not-allowed"
+              >
+                N/A
+              </button>
+            )}
+          </td>
+        </tr>
+      ))
+    ) : (
+      <tr>
+        <td colSpan="6" className="text-center py-4">
+          No population found.
+        </td>
+      </tr>
+    )}
+  </tbody>
+</table>
 
             {/* Pagination controls */}
             <div className="flex justify-center mt-4 space-x-2">

@@ -24,6 +24,14 @@ export default function CandidateRegistrationPage() {
 
   const DB_API = "/api/candidateregistration";
 
+   // set active hamburger
+  const [activehamburger, setActiveHamburger] = useState(false);
+
+    // open close handleCloseHamburger
+ const handleCloseHamburger = () => {
+  setActiveHamburger(!activehamburger);
+};
+
   // Fetch elections and population
   const fetchElections = async () => {
     try {
@@ -46,6 +54,12 @@ export default function CandidateRegistrationPage() {
       Swal.fire({ icon: "error", title: "Failed to fetch population" });
     }
   };
+
+  // Assume `elections` is the array from your API
+const electionsMap = {};
+elections.forEach((el) => {
+  electionsMap[el.id] = el.election_name;
+});
 
   useEffect(() => {
     const storedUser = localStorage.getItem("username");
@@ -160,19 +174,24 @@ export default function CandidateRegistrationPage() {
 
       <div className="flex flex-1 candidateregistration">
         {/* Sidebar */}
-        <aside className="bg-blurry w-64 shadow-md p-6">
-          <ul className="space-y-4">
-            <li className="font-semibold cursor-pointer hover:text-blue-600">
+        <aside className="menu-sidebar">
+          <div className={`hamburger-container ${activehamburger ? 'active' : ''}`}>
+              <button type="button"
+         onClick={handleCloseHamburger}
+        className={` button-hamburger ${activehamburger ? 'active' : ''}`}>
+        </button>
+          <ul className={`space-y-4 hamburger ${activehamburger ? 'active' : ''}`}>
+            <li className="font-semibold cursor-pointer hover:text-blue-600" >
               <a href="/dashboard">Dashboard</a>
             </li>
-            <li className="cursor-pointer hover:text-blue-600">
+            <li className="font-semibold cursor-pointer hover:text-blue-600">
               <a href="/addelection">Add Election</a>
             </li>
-            <li className="cursor-pointer hover:text-blue-600">
-              <a href="/dashboard">Register Candidates</a>
+            <li className="font-semibold cursor-pointer hover:text-blue-600">
+              <a href="/candidateregistration">Register Candidates</a>
             </li>
-            <li className="cursor-pointer hover:text-blue-600">
-              <a href="/listpopulation">Verify Membership</a>
+            <li className="font-semibold cursor-pointer hover:text-blue-600">
+              <a href="/listpopulation">Verify/Edit Membership</a>
             </li>
             <li
               className="height-fit cursor-pointer hover:text-red-600"
@@ -190,6 +209,7 @@ export default function CandidateRegistrationPage() {
               Logout
             </li>
           </ul>
+          </div>
         </aside>
 
         {/* Main content */}
@@ -369,7 +389,7 @@ export default function CandidateRegistrationPage() {
                   <th className="border px-4 py-2">ID</th>
                   <th className="border px-4 py-2">First Name</th>
                   <th className="border px-4 py-2">Last Name</th>
-                  <th className="border px-4 py-2">Residence</th>
+                  <th className="border px-4 py-2">Running Candidate</th>
                   <th className="border px-4 py-2">Actions</th>
                 </tr>
               </thead>
@@ -380,7 +400,8 @@ export default function CandidateRegistrationPage() {
                       <td className="border px-4 py-2">{pop.reqId}</td>
                       <td className="border px-4 py-2">{pop.firstname}</td>
                       <td className="border px-4 py-2">{pop.lastname}</td>
-                      <td className="border px-4 py-2">{pop.residence}</td>
+                     <td className="border px-4 py-2">
+                        {pop.electionName || "N/A"}</td>
                       <td className="flex justify-center border px-4 py-2 space-x-2">
                         <button
                           onClick={() => handleEdit(pop)}
