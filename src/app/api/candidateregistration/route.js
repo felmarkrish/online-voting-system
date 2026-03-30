@@ -40,10 +40,12 @@ export async function GET() {
 
     // 4️⃣ Fetch elections
     const electionsSnap = await getDocs(query(collection(db, "electorial_tbl"), orderBy("createddate", "desc")));
-    const electionsMap = {}; // electId -> election_name
-    electionsSnap.forEach((docSnap) => {
-      const data = docSnap.data();
-      electionsMap[data.electId] = data.election_name;
+    const electionsArray = electionsSnap.docs.map((docSnap) => {
+  const data = docSnap.data();
+  return {
+    electId: data.electId,
+    election_name: data.election_name,
+  };
     });
 
     // 5️⃣ Merge population with candidate + election name
@@ -54,7 +56,11 @@ export async function GET() {
         if (!user) return null;
 
         const candidate = candidatesMap[pop.reqId]; // only current year candidates
-        const electionName = candidate ? electionsMap[candidate.electId] : null;
+        const election = candidate
+  ? electionsArray.find(el => el.electId === candidate.electId)
+  : null;
+
+const electionName = election ? election.election_name : null;
 
         return {
           ...pop,
@@ -67,7 +73,7 @@ export async function GET() {
       })
       .filter(Boolean);
 
-    return NextResponse.json({ population: populationData });
+    return NextResponse.json({ population: populationData,  elections: electionsArray });
   } catch (error) {
     console.error("Error fetching data:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

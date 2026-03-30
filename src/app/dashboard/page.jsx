@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCaretRight, faBars } from "@fortawesome/free-solid-svg-icons";
+import { usePathname } from 'next/navigation';
 
 export default function DashboardPage() {
   const [username, setUsername] = useState("");
@@ -10,6 +11,9 @@ export default function DashboardPage() {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
+  const pathname = usePathname();
+  // Helper to check if link is active
+  const isActive = (href) => pathname === href;
 
   // set active hamburger
   const [activehamburger, setActiveHamburger] = useState(false);
@@ -85,34 +89,29 @@ useEffect(() => {
          onClick={handleCloseHamburger}
         className={` button-hamburger ${activehamburger ? 'active' : ''}`}>
         </button>
-          <ul className={`space-y-4 hamburger ${activehamburger ? 'active' : ''}`}>
-            <li className="font-semibold cursor-pointer hover:text-blue-600" >
+        <ul className={`space-y-4 hamburger ${activehamburger ? 'active' : ''}`}>
+           <li className={`font-semibold cursor-pointer ${isActive('/dashboard') ? 'activemenu' : ''}`}>
               <a href="/dashboard">Dashboard</a>
             </li>
-            <li className="font-semibold cursor-pointer hover:text-blue-600">
+           <li className={`font-semibold cursor-pointer ${isActive('/addelection') ? 'activemenu' : ''}`}>
               <a href="/addelection">Add Election</a>
             </li>
-            <li className="font-semibold cursor-pointer hover:text-blue-600">
+            <li className={`font-semibold cursor-pointer ${isActive('/candidateregistration') ? 'activemenu' : ''}`}>
               <a href="/candidateregistration">Register Candidates</a>
             </li>
-            <li className="font-semibold cursor-pointer hover:text-blue-600">
+            <li className={`font-semibold cursor-pointer ${isActive('/listpopulation') ? 'activemenu' : ''}`}>
               <a href="/listpopulation">Verify/Edit Membership</a>
             </li>
             <li
-              className="height-fit cursor-pointer hover:text-red-600"
-              onClick={async () => {
-                // Call API to clear cookies
-                await fetch("/api/logout", { method: "POST" });
-
-                // Clear localStorage
-                localStorage.removeItem("username");
-
-                // Redirect to login
-                window.location.href = "/login";
-              }}
-            >
-              Logout
-            </li>
+        className="height-fit cursor-pointer logout-btn"
+        onClick={async () => {
+          await fetch("/api/logout", { method: "POST" });
+          localStorage.removeItem("username");
+          window.location.href = "/login";
+        }}
+      >
+        Logout
+      </li>
           </ul>
           </div>
         </aside>
@@ -127,7 +126,7 @@ useEffect(() => {
         )}
 
         {/* Main Content */}
-        <main className="flex-1 p-4 sm:p-8 overflow-x-auto">
+        <main className="dashboard not-[]:flex-1 p-4 sm:p-8 overflow-x-auto">
           <h2 className="text-lg sm:text-xl font-semibold mb-6">
             Onboard Monitoring
           </h2>

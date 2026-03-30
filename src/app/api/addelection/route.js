@@ -65,7 +65,6 @@ export async function POST(req) {
       election_name,
       num_winners,
       createddate,
-      idx,
     });
 
     return NextResponse.json({
@@ -81,7 +80,7 @@ export async function POST(req) {
 // ✅ PUT election
 export async function PUT(req) {
   try {
-    const { electId, election_name, num_winners } = await req.json();
+    const { electId, election_name, num_winners, idx } = await req.json();
     if (!electId || !election_name || !num_winners) {
       return NextResponse.json({ error: "Missing data" }, { status: 400 });
     }
@@ -103,6 +102,11 @@ export async function PUT(req) {
     }
 
     // Allow updating status if provided
+    const updateData = {
+  election_name,
+  idx,
+  num_winners,
+};
 
     await updateDoc(electionRef, updateData);
 

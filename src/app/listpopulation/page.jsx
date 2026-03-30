@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
+import { usePathname } from 'next/navigation';
 
 export default function ListPopulationPage() {
   // population states
@@ -9,6 +10,9 @@ export default function ListPopulationPage() {
   const [message, setMessage] = useState("");
   const [reqIdToUpdate, setReqIdToUpdate] = useState(null);
   const [population, setPopulation] = useState([]);
+  const pathname = usePathname();
+      // Helper to check if link is active
+  const isActive = (href) => pathname === href;
 
 
   // set active hamburger
@@ -312,20 +316,20 @@ const clearForm = () => {
         className={` button-hamburger ${activehamburger ? 'active' : ''}`}>
         </button>
           <ul className={`space-y-4 hamburger ${activehamburger ? 'active' : ''}`}>
-            <li className="font-semibold cursor-pointer hover:text-blue-600" >
+            <li className={`font-semibold cursor-pointer ${isActive('/dashboard') ? 'activemenu' : ''}`}>
               <a href="/dashboard">Dashboard</a>
             </li>
-            <li className="font-semibold cursor-pointer hover:text-blue-600">
+           <li className={`font-semibold cursor-pointer ${isActive('/addelection') ? 'activemenu' : ''}`}>
               <a href="/addelection">Add Election</a>
             </li>
-            <li className="font-semibold cursor-pointer hover:text-blue-600">
+            <li className={`font-semibold cursor-pointer ${isActive('/candidateregistration') ? 'activemenu' : ''}`}>
               <a href="/candidateregistration">Register Candidates</a>
             </li>
-            <li className="font-semibold cursor-pointer hover:text-blue-600">
+            <li className={`font-semibold cursor-pointer ${isActive('/listpopulation') ? 'activemenu' : ''}`}>
               <a href="/listpopulation">Verify/Edit Membership</a>
             </li>
             <li
-              className="height-fit cursor-pointer hover:text-red-600"
+              className="height-fit cursor-pointer logout-btn"
               onClick={async () => {
                 // Call API to clear cookies
                 await fetch("/api/logout", { method: "POST" });

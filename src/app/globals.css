@@ -35,28 +35,35 @@ body {
   backdrop-filter: blur(15px);
 }
 .hamburger-container {
-  background: #11116c;
+  background: #241142;
   position: relative;
+  top: 8px;
   z-index: 2;
+  /* #4eff4e color active  */
 }
-.hamburger-container:before {
-  transform: rotate(40deg);
-}
-.hamburger-container:after {
-transform: rotate(-40deg);
-}
-.hamburger-container.active:before,
-.hamburger-container.active:after {
-  transform: rotate(0deg) !important;
+.hamburger-container .activemenu {
+  color: #4eff4e !important;
 }
 .hamburger-container.active:before {
-  top: 10px !important;
+  transform: rotate(40deg) !important;
+  top: 20px !important;
 }
 .hamburger-container.active:after {
+transform: rotate(-40deg) !important;
+  top: 20px !important;
+}
+.hamburger-container:before,
+.hamburger-container:after {
+  transform: rotate(0deg);
+}
+.hamburger-container:before {
+  top: 10px !important;
+}
+.hamburger-container:after {
   top: 30px !important;
 }
 .button-hamburger.active {
-    opacity: 1;
+    opacity: 0;
 }
 .button-hamburger:before {
   top: 13px !important;
@@ -68,7 +75,6 @@ transform: rotate(-40deg);
   width: 30px;
   height: 4px;
   background: #fff;
-  top: 20px;
   left: initial;
   right: 10px;
   bottom: initial;
@@ -82,7 +88,7 @@ transform: rotate(-40deg);
   position: absolute;
   right: 10px;
   z-index: 1;
-  opacity: 0;
+  opacity: 1;
   width: 32px;
   height: 30px;
   top: 8px;
@@ -305,7 +311,7 @@ input::placeholder {
   color: #fff;
 }
 .voterscontainermenu > li:hover {
-  color: #38cf2e;
+  color: #4eff4e !important
 }
 .banner-container {
   position: relative;
@@ -363,14 +369,21 @@ input::placeholder {
 .filterdateclass {
   margin-bottom: 50px;
 }
+.textbox-container .bg-w-hover:hover span {
+  color: #fff !important;
+}
 .bg-w-hover:hover span {
   color: #000;
+}
+.textbox-container > label:hover,
+.textbox-container > label:active {
+    background: #165416;
 }
 ul > li:active,
 a:active,
 ul > li:hover,
 a:hover ul > li:visited {
-  color: green !important;
+ color: #4eff4e !important ;
 }
 .fsize-20 {
   font-size: 20px;
@@ -396,6 +409,16 @@ a:hover ul > li:visited {
 .isShow:hover,
 .lead:hover {
   top: -10px !important;
+}
+.textbox-container > label > span {
+    color: #fff !important;
+}
+.dashboard {
+    width: 100% !important;
+    padding-top: 60px !important;
+}
+.hamburger .logout-btn:hover {
+  color: red !important;
 }
 @media (max-width: 1800px) {
   .voter-bg .big-paadding-1 {

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
+import { usePathname } from 'next/navigation';
 
 export default function CandidateRegistrationPage() {
   // States
@@ -21,6 +22,9 @@ export default function CandidateRegistrationPage() {
   const [gender, setGender] = useState("");
   const [residence, setResidence] = useState("");
   const [username, setUsername] = useState("");
+  const pathname = usePathname();
+    // Helper to check if link is active
+  const isActive = (href) => pathname === href;
 
   const DB_API = "/api/candidateregistration";
 
@@ -38,6 +42,8 @@ export default function CandidateRegistrationPage() {
       const res = await fetch(DB_API);
       const data = await res.json();
       if (Array.isArray(data.elections)) setElections(data.elections);
+      console.log("elections-population:", data);
+    console.log("ELECTION NAME:", elections.election_name);
     } catch (err) {
       console.error("fetching elections:", data.elections);
       Swal.fire({ icon: "error", title: "Failed to fetch elections" });
@@ -56,9 +62,9 @@ export default function CandidateRegistrationPage() {
   };
 
   // Assume `elections` is the array from your API
-const electionsMap = {};
+const electionsArray = {};
 elections.forEach((el) => {
-  electionsMap[el.id] = el.election_name;
+  electionsArray[el.id] = el.election_name;
 });
 
   useEffect(() => {
@@ -181,20 +187,20 @@ elections.forEach((el) => {
         className={` button-hamburger ${activehamburger ? 'active' : ''}`}>
         </button>
           <ul className={`space-y-4 hamburger ${activehamburger ? 'active' : ''}`}>
-            <li className="font-semibold cursor-pointer hover:text-blue-600" >
+             <li className={`font-semibold cursor-pointer ${isActive('/dashboard') ? 'activemenu' : ''}`}>
               <a href="/dashboard">Dashboard</a>
             </li>
-            <li className="font-semibold cursor-pointer hover:text-blue-600">
+           <li className={`font-semibold cursor-pointer ${isActive('/addelection') ? 'activemenu' : ''}`}>
               <a href="/addelection">Add Election</a>
             </li>
-            <li className="font-semibold cursor-pointer hover:text-blue-600">
+            <li className={`font-semibold cursor-pointer ${isActive('/candidateregistration') ? 'activemenu' : ''}`}>
               <a href="/candidateregistration">Register Candidates</a>
             </li>
-            <li className="font-semibold cursor-pointer hover:text-blue-600">
+            <li className={`font-semibold cursor-pointer ${isActive('/listpopulation') ? 'activemenu' : ''}`}>
               <a href="/listpopulation">Verify/Edit Membership</a>
             </li>
             <li
-              className="height-fit cursor-pointer hover:text-red-600"
+              className="height-fit cursor-pointer logout-btn"
               onClick={async () => {
                 // Call API to clear cookies
                 await fetch("/api/logout", { method: "POST" });

@@ -216,7 +216,7 @@ function VoterPageInner() {
                     </span>
                   </h2>
 
-                  <div className="space-y-3">
+                  <div className="space-y-3 textbox-container">
                     {election.candidates.map((c) => (
                       <label
                         key={c.candidateId}
